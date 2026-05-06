@@ -6,7 +6,7 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
-from finanmind.services.budget_category_palette import BudgetCategoryPalette
+from finanmind.budget.palette import BudgetCategoryPalette
 
 
 class BudgetCategoryDialog:

@@ -6,9 +6,12 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
-from finanmind.repositories.budget_repository_factory import BudgetRepositoryFactory
-from finanmind.services.budget_book_service import BudgetBookService
+from finanmind.budget.book_service import BudgetBookService
+from finanmind.budget.repository_factory import BudgetRepositoryFactory
+from finanmind.repositories.monthly_distribution_repository_factory import MonthlyDistributionRepositoryFactory
+from finanmind.services.monthly_distribution_service import MonthlyDistributionService
 from finanmind.ui.budget_management_window import BudgetManagementWindow
+from finanmind.ui.monthly_distribution_window import MonthlyDistributionWindow
 
 
 class ApplicationShell:
@@ -35,8 +38,19 @@ class ApplicationShell:
         viewer = BudgetManagementWindow(self._content_host, budget_book)
         viewer.attach()
 
+    def show_monthly_distribution_view(self) -> None:
+        """Mount the payroll distribution ledger versus budget tags."""
+        assert self._content_host is not None
+        self._root.title("Finanmind — Distribución mensual")
+        self._purge_content_host()
+        budget_repo = BudgetRepositoryFactory.from_app_config()
+        ledger_repo = MonthlyDistributionRepositoryFactory.from_app_config()
+        budget_book = BudgetBookService(budget_repo)
+        ledger = MonthlyDistributionService(ledger_repo)
+        viewer = MonthlyDistributionWindow(self._content_host, budget_book, ledger)
+        viewer.attach()
+
     def _configure_window_chrome(self) -> None:
-        self._root.geometry("1240x740")
         self._root.minsize(1000, 620)
 
     def _assemble_body(self) -> None:
@@ -59,6 +73,7 @@ class ApplicationShell:
     def _populate_sidebar(self, rail: ctk.CTkFrame) -> None:
         self._add_brand_block(rail)
         self._add_budget_button(rail)
+        self._add_distribution_button(rail)
         self._add_future_button(rail, "Deudas")
         self._add_future_button(rail, "Ingresos")
         self._add_future_button(rail, "Metas")
@@ -88,6 +103,19 @@ class ApplicationShell:
             command=self.show_budget_view,
         )
         btn.pack(fill="x", padx=14, pady=(16, 8))
+
+    def _add_distribution_button(self, rail: ctk.CTkFrame) -> None:
+        btn = ctk.CTkButton(
+            rail,
+            text="  Distribución mensual",
+            anchor="w",
+            height=42,
+            fg_color="#0d9488",
+            hover_color="#0f766e",
+            text_color="#ffffff",
+            command=self.show_monthly_distribution_view,
+        )
+        btn.pack(fill="x", padx=14, pady=4)
 
     def _add_future_button(self, rail: ctk.CTkFrame, caption: str) -> None:
         btn = ctk.CTkButton(

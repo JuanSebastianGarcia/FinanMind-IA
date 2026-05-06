@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import uuid
 
+from finanmind.budget.palette import BudgetCategoryPalette
+from finanmind.budget.repository import BudgetRepository
 from finanmind.models.budget_category import BudgetCategory
 from finanmind.models.budget_label import BudgetLabel
 from finanmind.models.budget_workspace import BudgetWorkspace
-from finanmind.repositories.budget_repository import BudgetRepository
-from finanmind.services.budget_category_palette import BudgetCategoryPalette
 
 
 class BudgetBookService:

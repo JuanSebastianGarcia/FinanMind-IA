@@ -11,6 +11,7 @@ from finanmind.repositories.workspace_settings_repository import WorkspaceSettin
 from finanmind.services.user_data_path_service import UserDataPathService
 from finanmind.ui.application_shell import ApplicationShell
 from finanmind.ui.appearance_configurator import AppearanceConfigurator
+from finanmind.ui.window_startup import MainWindowPlacement
 from finanmind.ui.workspace_setup_screen import WorkspaceSetupScreen
 
 
@@ -31,6 +32,7 @@ class DesktopRunner:
                 return
         shell = ApplicationShell(root)
         shell.present_initial_panel()
+        MainWindowPlacement.apply_maximized(root, min_width=1000, min_height=620)
         self._focus_root(root)
         root.mainloop()
 

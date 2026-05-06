@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
+from finanmind.budget.repository import BudgetRepository
 from finanmind.config import AppConfig
-from finanmind.repositories.budget_repository import BudgetRepository
 
 
 class BudgetRepositoryFactory:

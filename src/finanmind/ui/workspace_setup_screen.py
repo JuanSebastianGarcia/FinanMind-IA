@@ -9,6 +9,7 @@ from tkinter import filedialog, messagebox
 import customtkinter as ctk
 
 from finanmind.services.user_data_path_service import UserDataPathService
+from finanmind.ui.window_startup import MainWindowPlacement
 
 
 class WorkspaceSetupScreen:
@@ -32,8 +33,7 @@ class WorkspaceSetupScreen:
     def _prepare_master(self) -> None:
         self._master.configure(fg_color=("#FFFFFF", "#FFFFFF"))
         self._master.title("Finanmind — Primera configuración")
-        self._master.geometry("780x500")
-        self._master.minsize(660, 440)
+        MainWindowPlacement.apply_maximized(self._master, min_width=660, min_height=440)
 
     def _build_shell(self) -> None:
         outer = ctk.CTkFrame(self._master, fg_color="#FFFFFF")

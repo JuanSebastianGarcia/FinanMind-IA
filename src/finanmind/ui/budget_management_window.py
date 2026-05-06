@@ -9,8 +9,8 @@ import customtkinter as ctk
 from finanmind.models.budget_category import BudgetCategory
 from finanmind.models.budget_label import BudgetLabel
 from finanmind.models.budget_workspace import BudgetWorkspace
-from finanmind.services.budget_book_service import BudgetBookService
-from finanmind.services.budget_percentage_service import BudgetPercentageService
+from finanmind.budget.book_service import BudgetBookService
+from finanmind.budget.salary_shares import BudgetSalaryShares
 from finanmind.ui.budget_category_dialog import BudgetCategoryDialog
 from finanmind.ui.budget_label_dialog import BudgetLabelDialog
 from finanmind.ui.budget_salary_dialog import BudgetSalaryDialog
@@ -104,9 +104,8 @@ class BudgetManagementWindow:
             self._render_category_column(cat, pct)
 
     def _percent_by_category(self, workspace: BudgetWorkspace) -> dict[str, float]:
-        service = BudgetPercentageService()
         pairs = [(c.category_id, [lbl.amount_cop for lbl in c.labels]) for c in workspace.categories]
-        return service.map_by_category_id(workspace.salary_cop, pairs)
+        return BudgetSalaryShares.map_by_category(workspace.salary_cop, pairs)
 
     def _render_empty_state(self) -> None:
         assert self._scroll is not None
