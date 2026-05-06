@@ -1,0 +1,26 @@
+---
+description: Finanmind Python style — function size, classes-only, class docs
+alwaysApply: true
+---
+
+# Python conventions (no exceptions)
+
+## Function length
+
+- Each **method or function body** is at most **15 lines**, counting only non-empty lines that are part of the body (exclude the `def` line). **Docstrings do not count** toward the 15 lines.
+- If longer: extract private/helper methods on the same class or collaborators with a single responsibility.
+
+## Classes only
+
+- **No module-level functions** (nothing loose outside a class). Entry points use a class method or static method (e.g. `Application.run`).
+- **Allowed**: module/docstring text; imports; minimal glue like `if __name__ == "__main__":` that only delegates to a class method.
+- **Package version**: `__version__` may be re-exported from a small metadata class (e.g. `PackageMetadata.VERSION`).
+
+## Classes and domains
+
+- Organize behavior in **classes**. Each domain (budget, debts, income, savings goals, investments, etc.) gets its **own** focused types — split by responsibility and context.
+- **Each class** must have a **docstring** stating its purpose.
+
+## Modules
+
+- Each module should have one clear responsibility; avoid dumping unrelated domains into one file.

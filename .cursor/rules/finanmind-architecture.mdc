@@ -1,0 +1,24 @@
+---
+description: Finanmind layered architecture, SRP domains, and dependency rules
+alwaysApply: true
+---
+
+# Architecture and dependencies
+
+## Layers (strict)
+
+- **UI (`src/finanmind/ui/`)**: presentation only. No business rules, no CSV/file I/O. Calls services.
+- **Services (`src/finanmind/services/`)**: business logic only. Uses repositories for persistence. No direct CSV parsing in UI-facing helpers mixed with widgets.
+- **Repositories (`src/finanmind/repositories/`)**: CSV (de)serialization and paths only. No budgeting/debt/investment rules.
+
+Do not import UI from services or repositories. Prefer dependency direction: `ui → services → repositories`; **models** are shared DTOs/types only (no layer mixing).
+
+## Single responsibility
+
+- One domain per cohesive unit (e.g. budget vs debts vs income): separate modules/classes; no cross-domain logic in the wrong module.
+- Prefer simplicity over frameworks.
+
+## Dependencies
+
+- Any third-party import → add an explicit pin or minimum version in `requirements.txt` (nothing used in code may be missing there).
+- Standard library only does not need to be listed.
