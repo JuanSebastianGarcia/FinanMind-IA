@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from finanmind.ui.budget_ui_theme import BudgetUiTheme
+
 
 class AppearanceConfigurator:
     """Sets appearance defaults shared by every Finanmind window."""
@@ -17,4 +19,4 @@ class AppearanceConfigurator:
     @classmethod
     def paint_main_surface(cls, window: ctk.CTk) -> None:
         """Paint the root window background pure white in both internal modes."""
-        window.configure(fg_color=("#FFFFFF", "#FFFFFF"))
+        window.configure(fg_color=(BudgetUiTheme.BG_MAIN, BudgetUiTheme.BG_MAIN))

@@ -7,6 +7,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 
 from finanmind.services.cop_amount_parser import CopAmountParser
+from finanmind.ui.budget_ui_theme import BudgetUiTheme
 
 
 class BudgetSalaryDialog:
@@ -33,24 +34,64 @@ class BudgetSalaryDialog:
         win.geometry("420x200")
         win.transient(self._master)
         win.grab_set()
+        win.configure(fg_color=BudgetUiTheme.BG_CARD)
         self._layout_form(win)
 
     def _layout_form(self, win: ctk.CTkToplevel) -> None:
-        frame = ctk.CTkFrame(win, fg_color="#FFFFFF")
+        frame = ctk.CTkFrame(win, fg_color=BudgetUiTheme.BG_CARD)
         frame.pack(fill="both", expand=True, padx=18, pady=18)
-        hint = ctk.CTkLabel(frame, text="Salario actual (COP, solo números)")
+        hint = ctk.CTkLabel(
+            frame,
+            text="Salario actual (COP, solo números)",
+            text_color=BudgetUiTheme.TXT_SEC,
+            anchor="w",
+        )
         hint.pack(anchor="w")
         seed = str(int(round(self._current_cop)))
-        entry = ctk.CTkEntry(frame, height=36)
+        entry = ctk.CTkEntry(
+            frame,
+            height=36,
+            fg_color=BudgetUiTheme.BG_MAIN,
+            border_color=BudgetUiTheme.BORDER,
+            text_color=BudgetUiTheme.TXT_PRI,
+        )
         entry.pack(fill="x", pady=(8, 14))
         entry.insert(0, seed)
         self._entry = entry
         row = ctk.CTkFrame(frame, fg_color="transparent")
         row.pack(fill="x")
-        cancel = ctk.CTkButton(row, text="Cancelar", width=110, command=self._cancel)
-        cancel.pack(side="right")
-        confirm = ctk.CTkButton(row, text="Guardar", width=110, command=self._confirm)
-        confirm.pack(side="right", padx=(0, 10))
+        self._outline_dialog_btn(row, "Cancelar", self._cancel).pack(side="right")
+        self._accent_dialog_btn(row, "Guardar", self._confirm).pack(side="right", padx=(0, 10))
+
+    def _accent_dialog_btn(self, row: ctk.CTkFrame, text: str, cmd) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            row,
+            text=text,
+            width=110,
+            height=32,
+            command=cmd,
+            fg_color=BudgetUiTheme.ACCENT,
+            hover_color=BudgetUiTheme.ACCENT_HOVER,
+            text_color="#ffffff",
+            corner_radius=8,
+            font=ctk.CTkFont(size=12),
+        )
+
+    def _outline_dialog_btn(self, row: ctk.CTkFrame, text: str, cmd) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            row,
+            text=text,
+            width=110,
+            height=32,
+            command=cmd,
+            fg_color="transparent",
+            border_width=1,
+            border_color=BudgetUiTheme.BORDER,
+            text_color=BudgetUiTheme.TXT_SEC,
+            hover_color=BudgetUiTheme.BG_HOVER,
+            corner_radius=8,
+            font=ctk.CTkFont(size=12),
+        )
 
     def _confirm(self) -> None:
         assert self._entry is not None

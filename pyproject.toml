@@ -9,6 +9,7 @@ description = "Personal finance desktop application"
 requires-python = ">=3.11"
 dependencies = [
     "customtkinter>=5.2",
+    "tkcalendar>=1.6.1",
 ]
 
 [project.scripts]

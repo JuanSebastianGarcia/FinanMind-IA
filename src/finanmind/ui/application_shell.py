@@ -11,6 +11,7 @@ from finanmind.budget.repository_factory import BudgetRepositoryFactory
 from finanmind.repositories.monthly_distribution_repository_factory import MonthlyDistributionRepositoryFactory
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
 from finanmind.ui.budget_management_window import BudgetManagementWindow
+from finanmind.ui.budget_ui_theme import BudgetUiTheme
 from finanmind.ui.monthly_distribution_window import MonthlyDistributionWindow
 
 
@@ -20,6 +21,9 @@ class ApplicationShell:
     def __init__(self, root: ctk.CTk) -> None:
         self._root = root
         self._content_host: ctk.CTkFrame | None = None
+        self._budget_nav_btn: ctk.CTkButton | None = None
+        self._dist_nav_btn: ctk.CTkButton | None = None
+        self._active_panel = "budget"
         self._configure_window_chrome()
         self._assemble_body()
 
@@ -37,6 +41,8 @@ class ApplicationShell:
         budget_book.load()
         viewer = BudgetManagementWindow(self._content_host, budget_book)
         viewer.attach()
+        self._active_panel = "budget"
+        self._apply_nav_styles()
 
     def show_monthly_distribution_view(self) -> None:
         """Mount the payroll distribution ledger versus budget tags."""
@@ -49,24 +55,26 @@ class ApplicationShell:
         ledger = MonthlyDistributionService(ledger_repo)
         viewer = MonthlyDistributionWindow(self._content_host, budget_book, ledger)
         viewer.attach()
+        self._active_panel = "distribution"
+        self._apply_nav_styles()
 
     def _configure_window_chrome(self) -> None:
         self._root.minsize(1000, 620)
 
     def _assemble_body(self) -> None:
-        body = ctk.CTkFrame(self._root, fg_color=("#FFFFFF", "#FFFFFF"))
+        body = ctk.CTkFrame(self._root, fg_color=(BudgetUiTheme.BG_MAIN, BudgetUiTheme.BG_MAIN))
         body.pack(fill="both", expand=True)
         self._mount_sidebar(body)
         self._content_host = self._mount_content_host(body)
 
     def _mount_sidebar(self, body: ctk.CTkFrame) -> None:
-        rail = ctk.CTkFrame(body, width=236, fg_color="#F1F5F9", corner_radius=0)
+        rail = ctk.CTkFrame(body, width=236, fg_color=BudgetUiTheme.SIDEBAR_BG, corner_radius=0)
         rail.pack(side="left", fill="y")
         rail.pack_propagate(False)
         self._populate_sidebar(rail)
 
     def _mount_content_host(self, body: ctk.CTkFrame) -> ctk.CTkFrame:
-        host = ctk.CTkFrame(body, fg_color=("#FFFFFF", "#FFFFFF"), corner_radius=0)
+        host = ctk.CTkFrame(body, fg_color=(BudgetUiTheme.BG_MAIN, BudgetUiTheme.BG_MAIN), corner_radius=0)
         host.pack(side="left", fill="both", expand=True)
         return host
 
@@ -77,45 +85,70 @@ class ApplicationShell:
         self._add_future_button(rail, "Deudas")
         self._add_future_button(rail, "Ingresos")
         self._add_future_button(rail, "Metas")
+        self._add_sidebar_footer(rail)
+        self._apply_nav_styles()
+
+    def _add_sidebar_footer(self, rail: ctk.CTkFrame) -> None:
+        foot_font = ctk.CTkFont(size=10)
+        lbl = ctk.CTkLabel(rail, text="budget.csv · COP", font=foot_font, text_color=BudgetUiTheme.SIDEBAR_MUTE)
+        lbl.pack(side="bottom", anchor="w", padx=16, pady=14)
+
+    def _apply_nav_styles(self) -> None:
+        if self._budget_nav_btn is None or self._dist_nav_btn is None:
+            return
+        active_bg = BudgetUiTheme.SIDEBAR_ACTIVE_BG
+        muted = BudgetUiTheme.SIDEBAR_MUTE
+        lit = BudgetUiTheme.SIDEBAR_TXT
+        b_on = self._active_panel == "budget"
+        d_on = self._active_panel == "distribution"
+        self._budget_nav_btn.configure(fg_color=active_bg if b_on else "transparent", text_color=lit if b_on else muted)
+        self._dist_nav_btn.configure(fg_color=active_bg if d_on else "transparent", text_color=lit if d_on else muted)
 
     def _add_brand_block(self, rail: ctk.CTkFrame) -> None:
-        title_font = ctk.CTkFont(size=21, weight="bold")
-        title = ctk.CTkLabel(rail, text="Finanmind", font=title_font, text_color="#0f172a")
-        title.pack(anchor="w", padx=22, pady=(26, 4))
-        subtitle_font = ctk.CTkFont(size=12)
-        subtitle = ctk.CTkLabel(
-            rail,
-            text="Finanzas personales",
-            font=subtitle_font,
-            text_color="#64748b",
-        )
-        subtitle.pack(anchor="w", padx=22, pady=(0, 10))
+        brand = ctk.CTkFrame(rail, fg_color="transparent")
+        brand.pack(fill="x", padx=16, pady=(20, 12))
+        title_font = ctk.CTkFont(size=17, weight="bold")
+        title = ctk.CTkLabel(brand, text="Finanmind", font=title_font, text_color=BudgetUiTheme.SIDEBAR_TXT)
+        title.pack(anchor="w")
+        sub_font = ctk.CTkFont(size=11)
+        subtitle = ctk.CTkLabel(brand, text="Finanzas personales", font=sub_font, text_color=BudgetUiTheme.SIDEBAR_MUTE)
+        subtitle.pack(anchor="w")
+        rule = ctk.CTkFrame(rail, fg_color="#2d3748", height=1)
+        rule.pack(fill="x", pady=(0, 10))
 
     def _add_budget_button(self, rail: ctk.CTkFrame) -> None:
         btn = ctk.CTkButton(
             rail,
             text="  Presupuesto",
             anchor="w",
-            height=42,
-            fg_color="#2563eb",
-            hover_color="#1d4ed8",
-            text_color="#ffffff",
+            font=ctk.CTkFont(size=13),
+            height=38,
+            fg_color="transparent",
+            hover_color=BudgetUiTheme.SIDEBAR_ACTIVE_BG,
+            text_color=BudgetUiTheme.SIDEBAR_MUTE,
+            border_width=0,
+            corner_radius=8,
             command=self.show_budget_view,
         )
-        btn.pack(fill="x", padx=14, pady=(16, 8))
+        btn.pack(fill="x", padx=8, pady=1)
+        self._budget_nav_btn = btn
 
     def _add_distribution_button(self, rail: ctk.CTkFrame) -> None:
         btn = ctk.CTkButton(
             rail,
             text="  Distribución mensual",
             anchor="w",
-            height=42,
-            fg_color="#0d9488",
-            hover_color="#0f766e",
-            text_color="#ffffff",
+            font=ctk.CTkFont(size=13),
+            height=38,
+            fg_color="transparent",
+            hover_color=BudgetUiTheme.SIDEBAR_ACTIVE_BG,
+            text_color=BudgetUiTheme.SIDEBAR_MUTE,
+            border_width=0,
+            corner_radius=8,
             command=self.show_monthly_distribution_view,
         )
-        btn.pack(fill="x", padx=14, pady=4)
+        btn.pack(fill="x", padx=8, pady=1)
+        self._dist_nav_btn = btn
 
     def _add_future_button(self, rail: ctk.CTkFrame, caption: str) -> None:
         btn = ctk.CTkButton(
@@ -124,11 +157,13 @@ class ApplicationShell:
             anchor="w",
             height=38,
             fg_color="transparent",
-            hover_color="#e2e8f0",
-            text_color="#475569",
+            hover_color=BudgetUiTheme.SIDEBAR_ACTIVE_BG,
+            text_color=BudgetUiTheme.SIDEBAR_MUTE,
+            border_width=0,
+            corner_radius=8,
             command=self._announce_future_feature,
         )
-        btn.pack(fill="x", padx=14, pady=4)
+        btn.pack(fill="x", padx=8, pady=1)
 
     def _announce_future_feature(self) -> None:
         messagebox.showinfo("Finanmind", "Esta sección estará disponible próximamente.")

@@ -12,10 +12,10 @@ from finanmind.models.income_distribution_line import IncomeDistributionLine
 from finanmind.models.income_receipt import IncomeReceipt
 from finanmind.budget.book_service import BudgetBookService
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
-from finanmind.ui.budget_match_row_fill import BudgetMatchRowFill
 from finanmind.ui.currency_presenter import CurrencyPresenter
 from finanmind.ui.distribution_line_dialog import DistributionLineDialog
 from finanmind.ui.distribution_receipt_dialog import DistributionReceiptDialog
+from finanmind.ui.budget_ui_theme import BudgetUiTheme
 
 
 class MonthlyDistributionWindow:
@@ -40,19 +40,51 @@ class MonthlyDistributionWindow:
         self._receipt_menu: ctk.CTkOptionMenu | None = None
         self._caption_to_receipt: dict[str, str] = {}
 
+    def _dialog_parent(self) -> ctk.Misc:
+        return self._host.winfo_toplevel()
+
+    def _accent_toolbar_button(self, parent: ctk.CTkFrame, text: str, cmd) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            parent,
+            text=text,
+            command=cmd,
+            fg_color=BudgetUiTheme.ACCENT,
+            hover_color=BudgetUiTheme.ACCENT_HOVER,
+            text_color="#ffffff",
+            height=32,
+            corner_radius=8,
+            font=ctk.CTkFont(size=13),
+        )
+
+    def _danger_toolbar_button(self, parent: ctk.CTkFrame, text: str, cmd) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            parent,
+            text=text,
+            command=cmd,
+            fg_color="#dc2626",
+            hover_color="#b91c1c",
+            text_color="#ffffff",
+            height=32,
+            corner_radius=8,
+            font=ctk.CTkFont(size=13),
+        )
+
     def attach(self) -> None:
         """Mount widgets and hydrate from disk."""
         self._book.load()
         self._ledger.load()
-        shell = ctk.CTkFrame(self._host, fg_color="#FFFFFF")
+        shell = ctk.CTkFrame(self._host, fg_color=BudgetUiTheme.BG_MAIN)
         shell.pack(fill="both", expand=True, padx=22, pady=22)
         self._render_heading(shell)
         split = ctk.CTkFrame(shell, fg_color="transparent")
         split.pack(fill="both", expand=True, pady=(4, 0))
+        split.grid_columnconfigure(0, weight=1, minsize=720)
+        split.grid_columnconfigure(1, weight=0, minsize=440)
+        split.grid_rowconfigure(0, weight=1)
         left_rail = ctk.CTkFrame(split, fg_color="transparent")
-        left_rail.pack(side="left", fill="both", expand=True, padx=(0, 14))
+        left_rail.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
         right_rail = ctk.CTkFrame(split, fg_color="transparent", width=440)
-        right_rail.pack(side="right", fill="both")
+        right_rail.grid(row=0, column=1, sticky="nsew")
         right_rail.pack_propagate(False)
         self._render_controls(left_rail)
         self._render_ledger_region(left_rail)
@@ -61,69 +93,124 @@ class MonthlyDistributionWindow:
 
     def _render_heading(self, shell: ctk.CTkFrame) -> None:
         title_font = ctk.CTkFont(size=26, weight="bold")
-        title = ctk.CTkLabel(shell, text="Distribución mensual", font=title_font)
+        title = ctk.CTkLabel(shell, text="Distribución mensual", font=title_font, text_color=BudgetUiTheme.TXT_PRI)
         title.pack(anchor="w")
         hint_font = ctk.CTkFont(size=14)
         hint = ctk.CTkLabel(
             shell,
             text="Registra ingresos y cómo se reparten en las etiquetas del presupuesto.",
             font=hint_font,
-            text_color="#64748b",
+            text_color=BudgetUiTheme.TXT_SEC,
         )
         hint.pack(anchor="w", pady=(6, 14))
 
     def _render_controls(self, rail: ctk.CTkFrame) -> None:
-        row = ctk.CTkFrame(rail, fg_color="transparent")
+        card = ctk.CTkFrame(rail, fg_color=BudgetUiTheme.BG_CARD, corner_radius=12, border_width=1, border_color=BudgetUiTheme.BORDER)
+        card.pack(fill="x", pady=(0, 12))
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.pack(fill="x", padx=14, pady=12)
+        self._mount_month_controls(inner)
+        self._mount_receipt_controls(inner)
+
+    def _option_menu_kwargs(self) -> dict:
+        return {
+            "fg_color": BudgetUiTheme.BG_MAIN,
+            "button_color": BudgetUiTheme.BORDER,
+            "button_hover_color": BudgetUiTheme.TXT_TER,
+            "dropdown_fg_color": BudgetUiTheme.BG_CARD,
+            "dropdown_text_color": BudgetUiTheme.TXT_PRI,
+            "text_color": BudgetUiTheme.TXT_PRI,
+            "height": 36,
+        }
+
+    def _mount_month_controls(self, inner: ctk.CTkFrame) -> None:
+        row = ctk.CTkFrame(inner, fg_color="transparent")
         row.pack(fill="x")
-        ctk.CTkLabel(row, text="Mes").pack(side="left")
-        menu = ctk.CTkOptionMenu(row, variable=self._month_var, values=["—"], command=self._handle_month_pick)
+        ctk.CTkLabel(row, text="Mes", text_color=BudgetUiTheme.TXT_SEC, anchor="w").pack(side="left")
+        menu = ctk.CTkOptionMenu(
+            row,
+            variable=self._month_var,
+            values=["—"],
+            command=self._handle_month_pick,
+            **self._option_menu_kwargs(),
+        )
         menu.pack(side="left", padx=(10, 18))
         self._month_menu = menu
-        ctk.CTkButton(row, text="Nuevo ingreso", command=self._handle_new_receipt).pack(side="left", padx=(0, 10))
-        row2 = ctk.CTkFrame(rail, fg_color="transparent")
-        row2.pack(fill="x", pady=(12, 8))
-        ctk.CTkLabel(row2, text="Ingreso seleccionado").pack(side="left")
+        self._accent_toolbar_button(row, "Nuevo ingreso", self._handle_new_receipt).pack(side="left", padx=(0, 10))
+
+    def _mount_receipt_controls(self, inner: ctk.CTkFrame) -> None:
+        row2 = ctk.CTkFrame(inner, fg_color="transparent")
+        row2.pack(fill="x", pady=(12, 0))
+        ctk.CTkLabel(row2, text="Ingreso seleccionado", text_color=BudgetUiTheme.TXT_SEC, anchor="w").pack(side="left")
         receipt_menu = ctk.CTkOptionMenu(
             row2,
             variable=self._receipt_var,
             values=["—"],
             command=self._handle_receipt_pick,
+            **self._option_menu_kwargs(),
         )
         receipt_menu.pack(side="left", padx=(10, 18))
         self._receipt_menu = receipt_menu
         self._remainder_lbl = ctk.CTkLabel(row2, text="", font=ctk.CTkFont(size=15, weight="bold"))
         self._remainder_lbl.pack(side="left", padx=(8, 18))
-        ctk.CTkButton(row2, text="Registrar distribución", command=self._handle_new_line).pack(side="left", padx=(0, 10))
-        ctk.CTkButton(row2, text="Eliminar ingreso", fg_color="#dc2626", hover_color="#b91c1c", command=self._handle_delete_receipt).pack(
-            side="left",
-        )
+        self._accent_toolbar_button(row2, "Registrar distribución", self._handle_new_line).pack(side="left", padx=(0, 10))
+        self._danger_toolbar_button(row2, "Eliminar ingreso", self._handle_delete_receipt).pack(side="left")
 
     def _render_ledger_region(self, rail: ctk.CTkFrame) -> None:
-        caption = ctk.CTkLabel(rail, text="Movimientos del ingreso", font=ctk.CTkFont(size=16, weight="bold"))
-        caption.pack(anchor="w", pady=(10, 6))
-        ledger = ctk.CTkScrollableFrame(rail, corner_radius=14, fg_color="#F8FAFC")
-        ledger.pack(fill="both", expand=True)
-        self._ledger_panel = ledger
+        cap = ctk.CTkLabel(
+            rail,
+            text="Movimientos del ingreso",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=BudgetUiTheme.TXT_PRI,
+        )
+        cap.pack(anchor="w", pady=(10, 6))
+        self._ledger_panel = self._create_ledger_scroll(rail)
+        self._ledger_panel.pack(fill="both", expand=True)
+
+    def _create_ledger_scroll(self, rail: ctk.CTkFrame) -> ctk.CTkScrollableFrame:
+        return ctk.CTkScrollableFrame(
+            rail,
+            width=796,
+            corner_radius=12,
+            fg_color=BudgetUiTheme.BG_CARD,
+            border_width=1,
+            border_color=BudgetUiTheme.BORDER,
+            scrollbar_button_color=BudgetUiTheme.BORDER,
+            scrollbar_button_hover_color=BudgetUiTheme.TXT_TER,
+        )
 
     def _render_summary_region(self, rail: ctk.CTkFrame) -> None:
-        panel = ctk.CTkFrame(rail, fg_color="#F1F5F9", corner_radius=14)
+        inner = self._mount_summary_panel(rail)
+        self._mount_summary_heading(inner)
+        self._mount_summary_scroll(inner)
+
+    def _mount_summary_panel(self, rail: ctk.CTkFrame) -> ctk.CTkFrame:
+        panel = ctk.CTkFrame(rail, fg_color=BudgetUiTheme.BG_CARD, corner_radius=12, border_width=1, border_color=BudgetUiTheme.BORDER)
         panel.pack(fill="both", expand=True)
         inner = ctk.CTkFrame(panel, fg_color="transparent")
         inner.pack(fill="both", expand=True, padx=12, pady=12)
-        caption = ctk.CTkLabel(
-            inner,
-            text="Resumen del mes vs presupuesto",
-            font=ctk.CTkFont(size=16, weight="bold"),
-        )
+        return inner
+
+    def _mount_summary_heading(self, inner: ctk.CTkFrame) -> None:
+        cap_font = ctk.CTkFont(size=16, weight="bold")
+        caption = ctk.CTkLabel(inner, text="Resumen del mes vs presupuesto", font=cap_font, text_color=BudgetUiTheme.TXT_PRI)
         caption.pack(anchor="w")
         hint = ctk.CTkLabel(
             inner,
             text="Contrasta lo distribuido en el mes con cada etiqueta.",
             font=ctk.CTkFont(size=12),
-            text_color="#64748b",
+            text_color=BudgetUiTheme.TXT_SEC,
         )
         hint.pack(anchor="w", pady=(2, 8))
-        summary = ctk.CTkScrollableFrame(inner, fg_color="#FFFFFF", corner_radius=10)
+
+    def _mount_summary_scroll(self, inner: ctk.CTkFrame) -> None:
+        summary = ctk.CTkScrollableFrame(
+            inner,
+            fg_color=BudgetUiTheme.BG_CARD,
+            corner_radius=10,
+            scrollbar_button_color=BudgetUiTheme.BORDER,
+            scrollbar_button_hover_color=BudgetUiTheme.TXT_TER,
+        )
         summary.pack(fill="both", expand=True)
         self._summary_panel = summary
 
@@ -191,11 +278,11 @@ class MonthlyDistributionWindow:
         assert self._remainder_lbl is not None
         receipt_id = self._active_receipt_id()
         if receipt_id is None:
-            self._remainder_lbl.configure(text="Selecciona un ingreso", text_color="#64748b")
+            self._remainder_lbl.configure(text="Selecciona un ingreso", text_color=BudgetUiTheme.TXT_SEC)
             return
         remainder = self._ledger.remaining_for_receipt(receipt_id)
         label = f"Por distribuir: {CurrencyPresenter.format_cop(remainder)}"
-        tone = "#dc2626" if remainder < 0 else "#0f172a"
+        tone = "#dc2626" if remainder < 0 else BudgetUiTheme.TXT_PRI
         self._remainder_lbl.configure(text=label, text_color=tone)
 
     def _active_receipt_id(self) -> str | None:
@@ -221,7 +308,7 @@ class MonthlyDistributionWindow:
 
     def _render_empty_ledger(self, msg: str) -> None:
         assert self._ledger_panel is not None
-        ctk.CTkLabel(self._ledger_panel, text=msg).pack(anchor="w", padx=12, pady=12)
+        ctk.CTkLabel(self._ledger_panel, text=msg, text_color=BudgetUiTheme.TXT_SEC).pack(anchor="w", padx=12, pady=12)
 
     def _append_ledger_header(self) -> None:
         assert self._ledger_panel is not None
@@ -231,43 +318,76 @@ class MonthlyDistributionWindow:
         self._grid_cell(row, "Concepto", bold=True, width=220)
         self._grid_cell(row, "Monto", bold=True, width=140)
         self._grid_cell(row, "Saldo ingreso", bold=True, width=160)
-        self._grid_cell(row, "", bold=True, width=90)
+        self._grid_cell(row, "", bold=True, width=92)
 
     def _append_income_row(self, receipt: IncomeReceipt, balance: float) -> None:
         assert self._ledger_panel is not None
-        row = ctk.CTkFrame(self._ledger_panel, fg_color="#E0F2FE")
+        row = ctk.CTkFrame(self._ledger_panel, fg_color=BudgetUiTheme.BG_MAIN)
         row.pack(fill="x", padx=10, pady=4)
         memo = receipt.memo.strip()
         concept = "Ingreso registrado"
         if memo:
             concept = f"Ingreso · {memo}"
         self._grid_cell(row, receipt.occurred_on, width=120)
-        self._grid_cell(row, concept, width=220)
+        self._grid_cell(row, concept, width=220, wraplength=208)
         self._grid_cell(row, CurrencyPresenter.format_cop(receipt.amount_cop), width=140)
         self._grid_cell(row, CurrencyPresenter.format_cop(balance), width=160)
-        self._grid_cell(row, "", width=90)
+        self._grid_cell(row, "", width=92)
 
     def _append_line_row(self, receipt_id: str, ln: IncomeDistributionLine, balance: float) -> None:
         assert self._ledger_panel is not None
-        row = ctk.CTkFrame(self._ledger_panel, fg_color="#FFFFFF")
+        row = ctk.CTkFrame(self._ledger_panel, fg_color=BudgetUiTheme.BG_CARD)
         row.pack(fill="x", padx=10, pady=4)
         workspace = self._book.peek()
         title = self._resolve_label_title(workspace, ln.label_id)
         memo = ln.memo.strip()
         concept = title if memo == "" else f"{title} · {memo}"
         self._grid_cell(row, ln.occurred_on, width=120)
-        self._grid_cell(row, concept, width=220)
+        self._grid_cell(row, concept, width=220, wraplength=208)
         self._grid_cell(row, CurrencyPresenter.format_cop(ln.amount_cop), width=140)
-        tone = "#dc2626" if balance < 0 else "#0f172a"
+        self._pack_line_balance_and_quit(row, ln, balance)
+
+    def _pack_line_balance_and_quit(self, row: ctk.CTkFrame, ln: IncomeDistributionLine, balance: float) -> None:
+        tone = "#dc2626" if balance < 0 else BudgetUiTheme.TXT_PRI
         bal_lbl = ctk.CTkLabel(row, text=CurrencyPresenter.format_cop(balance), width=160, anchor="w", text_color=tone)
         bal_lbl.pack(side="left", padx=6)
-        del_btn = ctk.CTkButton(row, text="Quitar", width=86, command=lambda: self._confirm_delete_line(ln.line_id))
+        del_btn = ctk.CTkButton(
+            row,
+            text="Quitar",
+            width=88,
+            height=28,
+            fg_color="transparent",
+            border_width=1,
+            border_color=BudgetUiTheme.BORDER,
+            text_color=BudgetUiTheme.TXT_SEC,
+            hover_color=BudgetUiTheme.BG_HOVER,
+            command=lambda: self._confirm_delete_line(ln.line_id),
+        )
         del_btn.pack(side="left", padx=6)
 
-    def _grid_cell(self, row: ctk.CTkFrame, text: str, width: int, bold: bool = False) -> None:
+    def _grid_cell(
+        self,
+        row: ctk.CTkFrame,
+        text: str,
+        width: int,
+        bold: bool = False,
+        wraplength: int | None = None,
+    ) -> None:
         font = ctk.CTkFont(weight="bold") if bold else ctk.CTkFont()
-        lbl = ctk.CTkLabel(row, text=text, width=width, anchor="w", font=font)
-        lbl.pack(side="left", padx=6)
+        if wraplength is None:
+            lbl = ctk.CTkLabel(row, text=text, width=width, anchor="w", font=font, text_color=BudgetUiTheme.TXT_PRI)
+        else:
+            lbl = ctk.CTkLabel(
+                row,
+                text=text,
+                width=width,
+                anchor="nw",
+                justify="left",
+                wraplength=wraplength,
+                font=font,
+                text_color=BudgetUiTheme.TXT_PRI,
+            )
+        lbl.pack(side="left", padx=6, pady=2)
 
     def _render_summary_rows(self) -> None:
         assert self._summary_panel is not None
@@ -278,38 +398,79 @@ class MonthlyDistributionWindow:
         spent_map = self._ledger.monthly_spent_by_label(month_key)
         header = ctk.CTkFrame(self._summary_panel, fg_color="transparent")
         header.pack(fill="x", padx=8, pady=(8, 4))
-        self._grid_cell(header, "Etiqueta", bold=True, width=152)
-        self._grid_cell(header, "Ppto.", bold=True, width=88)
-        self._grid_cell(header, "Dist.", bold=True, width=88)
-        self._grid_cell(header, "Diff.", bold=True, width=88)
+        self._mount_summary_table_header(header)
         rows = self._flatten_budget_labels(workspace)
         if not rows:
-            ctk.CTkLabel(self._summary_panel, text="Sin etiquetas en el presupuesto.").pack(anchor="w", padx=12, pady=10)
+            ctk.CTkLabel(self._summary_panel, text="Sin etiquetas en el presupuesto.", text_color=BudgetUiTheme.TXT_SEC).pack(
+                anchor="w",
+                padx=12,
+                pady=10,
+            )
             return
-        for title, label_id, budget_amt in rows:
+        for title, label_id, budget_amt, row_color in rows:
             spent = spent_map.get(label_id, 0.0)
             diff = budget_amt - spent
-            self._append_summary_row(title, budget_amt, spent, diff)
+            self._append_summary_row(title, budget_amt, spent, diff, row_color)
 
-    def _append_summary_row(self, title: str, budget_amt: float, spent: float, diff: float) -> None:
+    def _mount_summary_table_header(self, header: ctk.CTkFrame) -> None:
+        bold = ctk.CTkFont(weight="bold")
+        w = 86
+        ctk.CTkLabel(header, text="Diff.", font=bold, width=w, anchor="e").pack(side="right", padx=(4, 0))
+        ctk.CTkLabel(header, text="Dist.", font=bold, width=w, anchor="e").pack(side="right", padx=(0, 4))
+        ctk.CTkLabel(header, text="Ppto.", font=bold, width=w, anchor="e").pack(side="right", padx=(0, 4))
+        ctk.CTkLabel(header, text="Etiqueta", font=bold, width=136, anchor="w").pack(side="left", padx=(4, 6))
+
+    def _append_summary_row(
+        self,
+        title: str,
+        budget_amt: float,
+        spent: float,
+        diff: float,
+        row_color: str,
+    ) -> None:
         assert self._summary_panel is not None
-        fill = BudgetMatchRowFill.hex(spent, budget_amt)
-        row = ctk.CTkFrame(self._summary_panel, fg_color=fill)
+        row = ctk.CTkFrame(self._summary_panel, fg_color=row_color)
         row.pack(fill="x", padx=8, pady=3)
-        self._grid_cell(row, title, width=152)
-        self._grid_cell(row, CurrencyPresenter.format_cop(budget_amt), width=88)
-        self._grid_cell(row, CurrencyPresenter.format_cop(spent), width=88)
-        tone = "#dc2626" if diff < 0 else "#15803d"
-        diff_lbl = ctk.CTkLabel(row, text=CurrencyPresenter.format_cop(diff), width=88, anchor="w", text_color=tone)
-        diff_lbl.pack(side="left", padx=6)
+        self._fill_summary_row_cells(row, title, budget_amt, spent, diff)
 
-    def _flatten_budget_labels(self, workspace: BudgetWorkspace) -> list[tuple[str, str, float]]:
+    def _fill_summary_row_cells(
+        self,
+        row: ctk.CTkFrame,
+        title: str,
+        budget_amt: float,
+        spent: float,
+        diff: float,
+    ) -> None:
+        self._pack_summary_money_columns(row, budget_amt, spent, diff)
+        self._pack_summary_title_column(row, title)
+
+    def _pack_summary_money_columns(
+        self,
+        row: ctk.CTkFrame,
+        budget_amt: float,
+        spent: float,
+        diff: float,
+    ) -> None:
+        w = 86
+        tone = "#dc2626" if diff < 0 else "#15803d"
+        diff_lbl = ctk.CTkLabel(row, text=CurrencyPresenter.format_cop(diff), width=w, anchor="e", text_color=tone)
+        diff_lbl.pack(side="right", padx=(4, 0))
+        spent_lbl = ctk.CTkLabel(row, text=CurrencyPresenter.format_cop(spent), width=w, anchor="e")
+        spent_lbl.pack(side="right", padx=(0, 4))
+        cap_lbl = ctk.CTkLabel(row, text=CurrencyPresenter.format_cop(budget_amt), width=w, anchor="e")
+        cap_lbl.pack(side="right", padx=(0, 4))
+
+    def _pack_summary_title_column(self, row: ctk.CTkFrame, title: str) -> None:
+        lbl = ctk.CTkLabel(row, text=title, width=136, anchor="w", justify="left", wraplength=128)
+        lbl.pack(side="left", padx=(4, 6))
+
+    def _flatten_budget_labels(self, workspace: BudgetWorkspace) -> list[tuple[str, str, float, str]]:
         rows = []
         for cat in workspace.categories:
-            prefix = cat.title.strip()
+            tint = cat.color_light.strip() or cat.color_dark.strip() or "#FFFFFF"
             for lbl in cat.labels:
-                title = f"{prefix} · {lbl.title}" if prefix else lbl.title
-                rows.append((title, lbl.label_id, lbl.amount_cop))
+                title = lbl.title.strip() or "Etiqueta"
+                rows.append((title, lbl.label_id, lbl.amount_cop, tint))
         return rows
 
     def _resolve_label_title(self, workspace: BudgetWorkspace, label_id: str) -> str:
@@ -325,7 +486,7 @@ class MonthlyDistributionWindow:
         return f"{receipt.occurred_on}{suffix} · {CurrencyPresenter.format_cop(receipt.amount_cop)}"
 
     def _handle_new_receipt(self) -> None:
-        dialog = DistributionReceiptDialog(self._host)
+        dialog = DistributionReceiptDialog(self._dialog_parent())
         payload = dialog.show()
         if payload is None:
             return
@@ -352,7 +513,7 @@ class MonthlyDistributionWindow:
             return
         receipt = self._ledger.receipt_by_id(receipt_id)
         workspace = self._book.peek()
-        dialog = DistributionLineDialog(self._host, workspace, receipt.occurred_on)
+        dialog = DistributionLineDialog(self._dialog_parent(), workspace, receipt.occurred_on)
         payload = dialog.show()
         if payload is None:
             return
