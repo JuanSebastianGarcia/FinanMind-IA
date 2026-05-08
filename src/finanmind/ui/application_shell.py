@@ -18,6 +18,7 @@ from finanmind.ui.budget_management_window import BudgetManagementWindow
 from finanmind.ui.budget_review_window import BudgetReviewWindow
 from finanmind.ui.budget_ui_theme import BudgetUiTheme
 from finanmind.ui.credit_cards_router import CreditCardsRouter
+from finanmind.ui.financial_dashboard_window import FinancialDashboardWindow
 from finanmind.ui.investment_management_window import InvestmentManagementWindow
 from finanmind.ui.monthly_distribution_window import MonthlyDistributionWindow
 
@@ -38,18 +39,21 @@ class ApplicationShell:
 
     def _init_navigation_state(self) -> None:
         self._content_host: ctk.CTkFrame | None = None
+        self._dashboard_nav_btn: ctk.CTkButton | None = None
         self._budget_nav_btn: ctk.CTkButton | None = None
         self._dist_nav_btn: ctk.CTkButton | None = None
         self._cards_nav_btn: ctk.CTkButton | None = None
         self._investments_nav_btn: ctk.CTkButton | None = None
-        self._active_panel = "budget"
+        self._active_panel = "dashboard"
 
     def _init_panel_handles(self) -> None:
+        self._dashboard_layer: ctk.CTkFrame | None = None
         self._budget_layer: ctk.CTkFrame | None = None
         self._dist_layer: ctk.CTkFrame | None = None
         self._cards_layer: ctk.CTkFrame | None = None
         self._investments_layer: ctk.CTkFrame | None = None
         self._review_layer: ctk.CTkFrame | None = None
+        self._dashboard_viewer: FinancialDashboardWindow | None = None
         self._budget_viewer: BudgetManagementWindow | None = None
         self._dist_viewer: MonthlyDistributionWindow | None = None
         self._cards_router: CreditCardsRouter | None = None
@@ -57,13 +61,27 @@ class ApplicationShell:
         self._review_viewer: BudgetReviewWindow | None = None
 
     def present_initial_panel(self) -> None:
-        """Build all panels once and show the budget overview on top."""
+        """Build all panels once and show the dashboard on top."""
+        self._build_dashboard_layer()
         self._build_budget_layer()
         self._build_dist_layer()
         self._build_cards_layer()
         self._build_investments_layer()
         self._build_review_layer()
-        self.show_budget_view()
+        self.show_dashboard_view()
+
+    def show_dashboard_view(self) -> None:
+        """Lift the dashboard and refresh aggregates from every module."""
+        assert self._dashboard_layer is not None and self._dashboard_viewer is not None
+        self._root.title("Finanmind — Dashboard financiero")
+        self._shared_book.load()
+        self._ledger.load()
+        self._cards_service.load()
+        self._investments_service.load()
+        self._dashboard_viewer.refresh()
+        self._dashboard_layer.lift()
+        self._active_panel = "dashboard"
+        self._apply_nav_styles()
 
     def show_investments_view(self) -> None:
         """Lift the investments panel and refresh totals from disk."""
@@ -130,6 +148,21 @@ class ApplicationShell:
         service = InvestmentService(InvestmentRepositoryFactory.from_app_config())
         service.load()
         return service
+
+    def _build_dashboard_layer(self) -> None:
+        assert self._content_host is not None
+        layer = ctk.CTkFrame(self._content_host, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=0)
+        layer.place(x=0, y=0, relwidth=1, relheight=1)
+        viewer = FinancialDashboardWindow(
+            layer,
+            self._shared_book,
+            self._ledger,
+            self._cards_service,
+            self._investments_service,
+        )
+        viewer.attach()
+        self._dashboard_layer = layer
+        self._dashboard_viewer = viewer
 
     def _build_budget_layer(self) -> None:
         assert self._content_host is not None
@@ -207,6 +240,7 @@ class ApplicationShell:
 
     def _populate_sidebar(self, rail: ctk.CTkFrame) -> None:
         self._add_brand_block(rail)
+        self._add_dashboard_button(rail)
         self._add_budget_button(rail)
         self._add_distribution_button(rail)
         self._add_credit_cards_button(rail)
@@ -224,11 +258,12 @@ class ApplicationShell:
     def _apply_nav_styles(self) -> None:
         if self._budget_nav_btn is None or self._dist_nav_btn is None or self._cards_nav_btn is None:
             return
-        if self._investments_nav_btn is None:
+        if self._investments_nav_btn is None or self._dashboard_nav_btn is None:
             return
         active_bg = BudgetUiTheme.SIDEBAR_ACTIVE_BG
         muted = BudgetUiTheme.SIDEBAR_MUTE
         lit = BudgetUiTheme.SIDEBAR_TXT
+        self._tint_nav_button(self._dashboard_nav_btn, "dashboard", active_bg, lit, muted)
         self._tint_nav_button(self._budget_nav_btn, "budget", active_bg, lit, muted)
         self._tint_nav_button(self._dist_nav_btn, "distribution", active_bg, lit, muted)
         self._tint_nav_button(self._cards_nav_btn, "cards", active_bg, lit, muted)
@@ -261,6 +296,23 @@ class ApplicationShell:
         subtitle.pack(anchor="w")
         rule = ctk.CTkFrame(rail, fg_color="#2d3748", height=1)
         rule.pack(fill="x", pady=(0, 10))
+
+    def _add_dashboard_button(self, rail: ctk.CTkFrame) -> None:
+        btn = ctk.CTkButton(
+            rail,
+            text="  Dashboard",
+            anchor="w",
+            font=ctk.CTkFont(size=13),
+            height=38,
+            fg_color="transparent",
+            hover_color=BudgetUiTheme.SIDEBAR_ACTIVE_BG,
+            text_color=BudgetUiTheme.SIDEBAR_MUTE,
+            border_width=0,
+            corner_radius=8,
+            command=self.show_dashboard_view,
+        )
+        btn.pack(fill="x", padx=8, pady=1)
+        self._dashboard_nav_btn = btn
 
     def _add_budget_button(self, rail: ctk.CTkFrame) -> None:
         btn = ctk.CTkButton(

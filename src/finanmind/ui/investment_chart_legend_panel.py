@@ -15,8 +15,9 @@ from finanmind.ui.usd_amount_presenter import UsdAmountPresenter
 class InvestmentChartLegendPanel:
     """Maps each slice to a dot, label, percent, and amount (large typography)."""
 
-    def __init__(self, parent: ctk.CTkFrame) -> None:
+    def __init__(self, parent: ctk.CTkFrame, scroll_height: int = 220) -> None:
         self._parent = parent
+        self._scroll_height = max(80, int(scroll_height))
         self._scroll: ctk.CTkScrollableFrame | None = None
 
     def attach(self) -> None:
@@ -24,7 +25,7 @@ class InvestmentChartLegendPanel:
         scroll = ctk.CTkScrollableFrame(
             self._parent,
             fg_color="transparent",
-            height=220,
+            height=self._scroll_height,
             corner_radius=0,
             scrollbar_button_color=BudgetUiTheme.BORDER,
         )

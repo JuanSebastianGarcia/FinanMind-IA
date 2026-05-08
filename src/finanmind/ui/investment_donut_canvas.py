@@ -14,13 +14,13 @@ from finanmind.ui.investment_chart_palette import InvestmentChartPalette
 class InvestmentDonutCanvas:
     """Draws category slices on a square canvas with a short sweep-in animation."""
 
-    def __init__(self, parent: ctk.CTkFrame) -> None:
+    def __init__(self, parent: ctk.CTkFrame, size: int = 280) -> None:
         self._parent = parent
         self._canvas: tk.Canvas | None = None
         self._job: str | None = None
         self._rows: list[tuple[str, float, float]] = []
         self._progress = 1.0
-        self._size = 280
+        self._size = max(120, int(size))
 
     def attach(self) -> None:
         """Create a fixed square canvas so the ring is always circular."""

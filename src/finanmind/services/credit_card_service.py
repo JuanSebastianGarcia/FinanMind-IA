@@ -37,6 +37,10 @@ class CreditCardService:
         """Read-only copy of all cards."""
         return list(self._cards)
 
+    def expenses_snapshot(self) -> list[CreditCardExpense]:
+        """Shallow copy of every expense for reporting dashboards."""
+        return list(self._expenses)
+
     def card_by_id(self, card_id: str) -> CreditCard:
         """Return card or raise KeyError."""
         for card in self._cards:
