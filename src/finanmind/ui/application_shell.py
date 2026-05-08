@@ -168,7 +168,12 @@ class ApplicationShell:
         assert self._content_host is not None
         layer = ctk.CTkFrame(self._content_host, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=0)
         layer.place(x=0, y=0, relwidth=1, relheight=1)
-        viewer = BudgetManagementWindow(layer, self._shared_book, on_open_review=self.show_budget_review_view)
+        viewer = BudgetManagementWindow(
+            layer,
+            self._shared_book,
+            on_open_review=self.show_budget_review_view,
+            cards_service=self._cards_service,
+        )
         viewer.attach()
         self._budget_layer = layer
         self._budget_viewer = viewer
@@ -204,7 +209,7 @@ class ApplicationShell:
         assert self._content_host is not None
         layer = ctk.CTkFrame(self._content_host, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=0)
         layer.place(x=0, y=0, relwidth=1, relheight=1)
-        router = CreditCardsRouter(layer, self._cards_service)
+        router = CreditCardsRouter(layer, self._cards_service, book_service=self._shared_book)
         router.attach()
         self._cards_layer = layer
         self._cards_router = router
@@ -245,7 +250,6 @@ class ApplicationShell:
         self._add_distribution_button(rail)
         self._add_credit_cards_button(rail)
         self._add_investments_button(rail)
-        self._add_future_button(rail, "Ingresos")
         self._add_future_button(rail, "Metas")
         self._add_sidebar_footer(rail)
         self._apply_nav_styles()

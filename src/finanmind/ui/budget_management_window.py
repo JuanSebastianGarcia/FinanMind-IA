@@ -13,6 +13,7 @@ from finanmind.models.budget_label import BudgetLabel
 from finanmind.models.budget_workspace import BudgetWorkspace
 from finanmind.budget.book_service import BudgetBookService
 from finanmind.budget.salary_shares import BudgetSalaryShares
+from finanmind.services.credit_card_service import CreditCardService
 from finanmind.ui.budget_category_dialog import BudgetCategoryDialog
 from finanmind.ui.budget_label_dialog import BudgetLabelDialog
 from finanmind.ui.budget_salary_dialog import BudgetSalaryDialog
@@ -29,10 +30,13 @@ class BudgetManagementWindow:
         host: ctk.CTkFrame,
         book: BudgetBookService,
         on_open_review: Callable[[], None] | None = None,
+        *,
+        cards_service: CreditCardService | None = None,
     ) -> None:
         self._host = host
         self._book = book
         self._on_open_review = on_open_review
+        self._cards = cards_service
         self._salary_primary_lbl: ctk.CTkLabel | None = None
         self._salary_sub_lbl: ctk.CTkLabel | None = None
         self._salary_badge_lbl: ctk.CTkLabel | None = None
@@ -411,7 +415,7 @@ class BudgetManagementWindow:
         self._render_label_buttons(row, category_id, label)
         self._render_label_amount_cell(row, label, salary_cop)
         self._render_label_mini_bar(row, label, salary_cop, accent)
-        self._render_label_name_cell(row, label)
+        self._render_label_name_block(row, label)
 
     def _render_label_mini_bar(
         self,
@@ -428,9 +432,15 @@ class BudgetManagementWindow:
         fill = ctk.CTkFrame(bar_bg, fg_color=accent, width=bw, height=5, corner_radius=2)
         fill.place(x=0, y=0)
 
-    def _render_label_name_cell(self, row: ctk.CTkFrame, label: BudgetLabel) -> None:
-        name_lbl = ctk.CTkLabel(
-            row,
+    def _render_label_name_block(self, row: ctk.CTkFrame, label: BudgetLabel) -> None:
+        block = ctk.CTkFrame(row, fg_color="transparent")
+        block.pack(side="left", padx=(4, 6))
+        self._mount_label_name_text(block, label)
+        self._mount_label_link_caption(block, label)
+
+    def _mount_label_name_text(self, block: ctk.CTkFrame, label: BudgetLabel) -> None:
+        ctk.CTkLabel(
+            block,
             text=label.title,
             font=ctk.CTkFont(size=11),
             text_color=BudgetUiTheme.TXT_SEC,
@@ -438,8 +448,33 @@ class BudgetManagementWindow:
             anchor="w",
             justify="left",
             wraplength=128,
-        )
-        name_lbl.pack(side="left", padx=(4, 6))
+        ).pack(anchor="w")
+
+    def _mount_label_link_caption(self, block: ctk.CTkFrame, label: BudgetLabel) -> None:
+        caption = self._link_caption_for_label(label.label_id)
+        if caption == "":
+            return
+        ctk.CTkLabel(
+            block,
+            text=caption,
+            font=ctk.CTkFont(size=9),
+            text_color=BudgetUiTheme.ACCENT,
+            width=136,
+            anchor="w",
+            justify="left",
+            wraplength=128,
+        ).pack(anchor="w")
+
+    def _link_caption_for_label(self, label_id: str) -> str:
+        if self._cards is None:
+            return ""
+        cat = self._cards.category_for_label(label_id)
+        if cat is None:
+            return ""
+        card = self._cards.card_for_category(cat.category_id)
+        if card is None:
+            return f"↪ Tarjeta · {cat.title}"
+        return f"↪ {card.name} · {cat.title}"
 
     def _render_label_amount_cell(self, row: ctk.CTkFrame, label: BudgetLabel, salary_cop: float) -> None:
         share = BudgetSalaryShares.amount_share_percent(salary_cop, label.amount_cop)
@@ -532,20 +567,20 @@ class BudgetManagementWindow:
         self.refresh()
 
     def _handle_add_label(self, category_id: str) -> None:
-        dlg = BudgetLabelDialog(self._dialog_parent(), "", 0.0)
-        payload = dlg.show()
+        payload = self._show_label_dialog("", 0.0, seed_link_id="")
         if payload is None:
             return
         try:
-            self._book.add_label(category_id, payload[0], payload[1])
+            new_label = self._book.add_label(category_id, payload[0], payload[1])
         except (ValueError, KeyError) as exc:
             messagebox.showerror("Etiqueta", str(exc))
             return
+        self._apply_label_link(new_label.label_id, payload[2])
         self.refresh()
 
     def _handle_edit_label(self, category_id: str, label: BudgetLabel) -> None:
-        dlg = BudgetLabelDialog(self._dialog_parent(), label.title, label.amount_cop)
-        payload = dlg.show()
+        seed_link = self._current_link_for_label(label.label_id)
+        payload = self._show_label_dialog(label.title, label.amount_cop, seed_link_id=seed_link)
         if payload is None:
             return
         try:
@@ -553,7 +588,47 @@ class BudgetManagementWindow:
         except (ValueError, KeyError) as exc:
             messagebox.showerror("Etiqueta", str(exc))
             return
+        self._apply_label_link(label.label_id, payload[2])
         self.refresh()
+
+    def _show_label_dialog(
+        self,
+        seed_title: str,
+        seed_amount: float,
+        *,
+        seed_link_id: str,
+    ) -> tuple[str, float, str] | None:
+        dlg = BudgetLabelDialog(
+            self._dialog_parent(),
+            seed_title,
+            seed_amount,
+            link_options=self._build_cc_link_options(),
+            seed_link_id=seed_link_id,
+        )
+        return dlg.show()
+
+    def _build_cc_link_options(self) -> list[tuple[str, str]]:
+        if self._cards is None:
+            return []
+        out: list[tuple[str, str]] = []
+        for card in self._cards.cards_snapshot():
+            for cat in self._cards.categories_for_card(card.card_id):
+                out.append((f"{card.name} → {cat.title}", cat.category_id))
+        return out
+
+    def _current_link_for_label(self, label_id: str) -> str:
+        if self._cards is None:
+            return ""
+        cat = self._cards.category_for_label(label_id)
+        return cat.category_id if cat is not None else ""
+
+    def _apply_label_link(self, label_id: str, target_cc_category_id: str) -> None:
+        if self._cards is None:
+            return
+        try:
+            self._cards.set_link_for_label(label_id, target_cc_category_id)
+        except KeyError:
+            pass
 
     def _handle_delete_label(self, category_id: str, label_id: str) -> None:
         if not messagebox.askyesno("Eliminar etiqueta", "¿Eliminar esta etiqueta?"):

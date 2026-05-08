@@ -32,25 +32,22 @@ class DashboardSummaryGrid:
 
     def refresh(self, snap: FinancialDashboardSnapshot) -> None:
         """Push formatted currency strings for the active month."""
-        spend = snap.distribution_spent_cop + snap.card_spent_month_cop
         lim = snap.card_limit_total_cop
         debt = snap.card_debt_total_cop
         use = (debt / lim * 100.0) if lim > 0 else 0.0
         self._set_cell(0, CurrencyPresenter.format_cop(snap.income_cop), "Ingresos registrados")
-        self._set_cell(1, CurrencyPresenter.format_cop(spend), "Presupuesto + tarjetas")
-        self._set_cell(2, CurrencyPresenter.format_cop(snap.cash_remainder_cop), "Tras asignar presupuesto")
-        self._set_cell(3, CurrencyPresenter.format_cop(debt), f"Uso acumulado ~{use:.0f}% del cupo")
+        self._set_cell(1, CurrencyPresenter.format_cop(snap.cash_remainder_cop), "Tras asignar presupuesto")
+        self._set_cell(2, CurrencyPresenter.format_cop(debt), f"Uso acumulado ~{use:.0f}% del cupo")
         self._set_cell(
-            4,
+            3,
             CurrencyPresenter.format_cop(snap.investment_cop),
             UsdAmountPresenter.format_usd(snap.investment_usd),
         )
-        self._set_cell(5, CurrencyPresenter.format_cop(snap.savings_hint_cop), "Ingresos − asignaciones − TC")
+        self._set_cell(4, CurrencyPresenter.format_cop(snap.savings_hint_cop), "Ingresos − asignaciones − TC")
 
     def _titles(self) -> list[str]:
         return [
             "Ingresos del mes",
-            "Gastos del mes",
             "Saldo (asignaciones)",
             "Deuda tarjetas",
             "Inversión",

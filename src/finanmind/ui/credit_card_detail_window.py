@@ -8,6 +8,7 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
+from finanmind.budget.book_service import BudgetBookService
 from finanmind.models.credit_card import CreditCard
 from finanmind.models.credit_card_category import CreditCardCategory
 from finanmind.models.credit_card_expense import CreditCardExpense
@@ -34,12 +35,15 @@ class CreditCardDetailWindow:
         card_id: str,
         on_back: Callable[[], None],
         on_card_deleted: Callable[[], None],
+        *,
+        book_service: BudgetBookService | None = None,
     ) -> None:
         self._host = host
         self._service = service
         self._card_id = card_id
         self._on_back = on_back
         self._on_card_deleted = on_card_deleted
+        self._book = book_service
         self._cycle_var = ctk.StringVar(value=self._default_cycle_key())
         self._title_lbl: ctk.CTkLabel | None = None
         self._summary_panel: ctk.CTkFrame | None = None
@@ -603,7 +607,7 @@ class CreditCardDetailWindow:
         row = ctk.CTkFrame(self._categories_panel, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=8)
         row.pack(fill="x", padx=8, pady=4)
         self._mount_category_swatch(row, cat.color)
-        self._mount_category_title(row, cat.title)
+        self._mount_category_title_block(row, cat)
         self._mount_category_actions(row, cat.category_id)
 
     def _mount_category_swatch(self, row: ctk.CTkFrame, color: str) -> None:
@@ -611,14 +615,44 @@ class CreditCardDetailWindow:
         swatch.pack(side="left", padx=(8, 6), pady=8)
         swatch.pack_propagate(False)
 
-    def _mount_category_title(self, row: ctk.CTkFrame, title: str) -> None:
+    def _mount_category_title_block(self, row: ctk.CTkFrame, cat: CreditCardCategory) -> None:
+        body = ctk.CTkFrame(row, fg_color="transparent")
+        body.pack(side="left", fill="x", expand=True)
         ctk.CTkLabel(
-            row,
-            text=title,
+            body,
+            text=cat.title,
             font=ctk.CTkFont(size=12, weight="bold"),
             text_color=BudgetUiTheme.TXT_PRI,
             anchor="w",
-        ).pack(side="left", fill="x", expand=True)
+        ).pack(fill="x")
+        self._mount_category_link_caption(body, cat)
+
+    def _mount_category_link_caption(self, body: ctk.CTkFrame, cat: CreditCardCategory) -> None:
+        caption = self._link_caption_for_category(cat)
+        if caption == "":
+            return
+        ctk.CTkLabel(
+            body,
+            text=caption,
+            font=ctk.CTkFont(size=10),
+            text_color=BudgetUiTheme.ACCENT,
+            anchor="w",
+        ).pack(fill="x")
+
+    def _link_caption_for_category(self, cat: CreditCardCategory) -> str:
+        label_path = self._budget_label_path(cat.linked_label_id)
+        if label_path == "":
+            return ""
+        return f"↪ Presupuesto · {label_path}"
+
+    def _budget_label_path(self, label_id: str) -> str:
+        if self._book is None or label_id == "":
+            return ""
+        for cat in self._book.peek().categories:
+            for lbl in cat.labels:
+                if lbl.label_id == label_id:
+                    return f"{cat.title} → {lbl.title}"
+        return ""
 
     def _mount_category_actions(self, row: ctk.CTkFrame, category_id: str) -> None:
         self._mount_category_edit_btn(row, category_id)
@@ -840,13 +874,7 @@ class CreditCardDetailWindow:
         self._on_card_deleted()
 
     def _handle_new_category(self) -> None:
-        dialog = CreditCardCategoryDialog(
-            self._host.winfo_toplevel(),
-            "Nueva categoría",
-            seed_title="",
-            seed_color="",
-        )
-        payload = dialog.show()
+        payload = self._show_new_category_dialog()
         if payload is None:
             return
         try:
@@ -856,29 +884,54 @@ class CreditCardDetailWindow:
             return
         self.refresh()
 
+    def _show_new_category_dialog(self) -> tuple[str, str, str] | None:
+        dialog = CreditCardCategoryDialog(
+            self._host.winfo_toplevel(),
+            "Nueva categoría",
+            seed_title="",
+            seed_color="",
+            link_options=self._build_label_options(),
+            seed_link_id="",
+        )
+        return dialog.show()
+
     def _handle_edit_category(self, category_id: str) -> None:
         try:
             cat = self._service.category_by_id(category_id)
         except KeyError:
             return
+        payload = self._show_edit_category_dialog(cat)
+        if payload is None:
+            return
+        self._save_category_update(category_id, payload)
+
+    def _show_edit_category_dialog(self, cat: CreditCardCategory) -> tuple[str, str, str] | None:
         dialog = CreditCardCategoryDialog(
             self._host.winfo_toplevel(),
             "Editar categoría",
             seed_title=cat.title,
             seed_color=cat.color,
+            link_options=self._build_label_options(),
+            seed_link_id=cat.linked_label_id,
         )
-        payload = dialog.show()
-        if payload is None:
-            return
-        self._save_category_update(category_id, payload)
+        return dialog.show()
 
-    def _save_category_update(self, category_id: str, payload: tuple[str, str]) -> None:
+    def _save_category_update(self, category_id: str, payload: tuple[str, str, str]) -> None:
         try:
             self._service.update_category(category_id, *payload)
         except ValueError as exc:
             messagebox.showwarning("Categoría", str(exc))
             return
         self.refresh()
+
+    def _build_label_options(self) -> list[tuple[str, str]]:
+        if self._book is None:
+            return []
+        out: list[tuple[str, str]] = []
+        for cat in self._book.peek().categories:
+            for lbl in cat.labels:
+                out.append((f"{cat.title} → {lbl.title}", lbl.label_id))
+        return out
 
     def _handle_delete_category(self, category_id: str) -> None:
         if not messagebox.askyesno("Categoría", "¿Eliminar esta categoría? Los gastos quedarán sin categoría."):

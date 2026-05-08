@@ -88,7 +88,7 @@ class CreditCardCsvCodec:
             "",
             "",
             cat.title,
-            "",
+            cat.linked_label_id,
             cat.color,
             "",
             "",
@@ -187,6 +187,7 @@ class CreditCardCsvCodec:
             card_id=cls._cell(row, 2),
             title=cls._cell(row, 6),
             color=cls._cell(row, 8),
+            linked_label_id=cls._cell(row, 7),
         )
 
     @classmethod

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from finanmind.models.linked_pair_series import LinkedPairSeries
+
 
 @dataclass(frozen=True)
 class FinancialDashboardSnapshot:
@@ -27,6 +29,7 @@ class FinancialDashboardSnapshot:
     budget_distribution_rows: list[tuple[str, float, float]]
     credit_category_rows: list[tuple[str, float, float]]
     flow_points: list[tuple[str, float, float]]
+    linked_pair_series: list[LinkedPairSeries]
     insights: list[str]
     health_rows: list[tuple[str, str]]
     month_picker_keys: list[str]

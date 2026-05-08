@@ -118,25 +118,43 @@ class CreditCardService:
                 return cat
         raise KeyError("Categoría no encontrada")
 
-    def add_category(self, card_id: str, title: str, color: str) -> CreditCardCategory:
-        """Insert a new category bound to a card."""
+    def add_category(
+        self,
+        card_id: str,
+        title: str,
+        color: str,
+        linked_label_id: str = "",
+    ) -> CreditCardCategory:
+        """Insert a new category bound to a card; optionally link to a budget label."""
         self.card_by_id(card_id)
         clean_title = self._require_text(title, "Título requerido")
+        link_id = linked_label_id.strip()
+        self._clear_link_on_other_categories(link_id, keep_id="")
         cat = CreditCardCategory(
             category_id=str(uuid.uuid4()),
             card_id=card_id,
             title=clean_title,
             color=color.strip(),
+            linked_label_id=link_id,
         )
         self._categories.append(cat)
         self.persist()
         return cat
 
-    def update_category(self, category_id: str, title: str, color: str) -> CreditCardCategory:
-        """Mutate category title/color in place."""
+    def update_category(
+        self,
+        category_id: str,
+        title: str,
+        color: str,
+        linked_label_id: str = "",
+    ) -> CreditCardCategory:
+        """Mutate title, color, and the optional budget-label link in place."""
         cat = self.category_by_id(category_id)
         cat.title = self._require_text(title, "Título requerido")
         cat.color = color.strip()
+        link_id = linked_label_id.strip()
+        self._clear_link_on_other_categories(link_id, keep_id=category_id)
+        cat.linked_label_id = link_id
         self.persist()
         return cat
 
@@ -150,6 +168,48 @@ class CreditCardService:
             if ex.category_id == category_id:
                 ex.category_id = ""
         self.persist()
+
+    def set_link_for_label(self, label_id: str, target_category_id: str) -> None:
+        """Make ``target_category_id`` the unique CC category linked to ``label_id``."""
+        label_token = label_id.strip()
+        target = target_category_id.strip()
+        if label_token == "":
+            return
+        self._clear_link_on_other_categories(label_token, keep_id=target)
+        if target != "":
+            cat = self.category_by_id(target)
+            cat.linked_label_id = label_token
+        self.persist()
+
+    def category_for_label(self, label_id: str) -> CreditCardCategory | None:
+        """Return the single CC category linked to ``label_id`` or None."""
+        token = label_id.strip()
+        if token == "":
+            return None
+        for cat in self._categories:
+            if cat.linked_label_id == token:
+                return cat
+        return None
+
+    def card_for_category(self, category_id: str) -> CreditCard | None:
+        """Return the parent card of a category or None."""
+        try:
+            cat = self.category_by_id(category_id)
+        except KeyError:
+            return None
+        try:
+            return self.card_by_id(cat.card_id)
+        except KeyError:
+            return None
+
+    def _clear_link_on_other_categories(self, label_id: str, keep_id: str) -> None:
+        if label_id == "":
+            return
+        for cat in self._categories:
+            if cat.category_id == keep_id:
+                continue
+            if cat.linked_label_id == label_id:
+                cat.linked_label_id = ""
 
     def expenses_for_card(self, card_id: str) -> list[CreditCardExpense]:
         """Return all expenses for the card, sorted by date asc, id asc."""

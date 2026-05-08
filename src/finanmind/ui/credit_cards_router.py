@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from finanmind.budget.book_service import BudgetBookService
 from finanmind.services.credit_card_service import CreditCardService
 from finanmind.ui.budget_ui_theme import BudgetUiTheme
 from finanmind.ui.credit_card_detail_window import CreditCardDetailWindow
@@ -13,9 +14,16 @@ from finanmind.ui.credit_cards_dashboard_window import CreditCardsDashboardWindo
 class CreditCardsRouter:
     """Drives navigation between the cards dashboard and a single card detail view."""
 
-    def __init__(self, host: ctk.CTkFrame, service: CreditCardService) -> None:
+    def __init__(
+        self,
+        host: ctk.CTkFrame,
+        service: CreditCardService,
+        *,
+        book_service: BudgetBookService | None = None,
+    ) -> None:
         self._host = host
         self._service = service
+        self._book = book_service
         self._stage: ctk.CTkFrame | None = None
         self._dashboard: CreditCardsDashboardWindow | None = None
         self._current_view = "dashboard"
@@ -55,6 +63,7 @@ class CreditCardsRouter:
             card_id,
             on_back=self._on_back,
             on_card_deleted=self._on_card_deleted,
+            book_service=self._book,
         )
         detail.attach()
 

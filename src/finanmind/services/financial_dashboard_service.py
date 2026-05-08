@@ -10,16 +10,20 @@ from finanmind.models.credit_card_expense import CreditCardExpense
 from finanmind.models.financial_dashboard_snapshot import FinancialDashboardSnapshot
 from finanmind.models.investment_currency_code import InvestmentCurrencyCode
 from finanmind.models.investment_entry import InvestmentEntry
+from finanmind.models.linked_pair_series import LinkedPairSeries
 from finanmind.services.credit_card_balance import CreditCardBalance
 from finanmind.services.credit_card_service import CreditCardService
 from finanmind.services.investment_portfolio_analytics import InvestmentPortfolioAnalytics
 from finanmind.services.investment_service import InvestmentService
+from finanmind.services.linked_budget_card_analytics import LinkedBudgetCardAnalytics
 from finanmind.services.month_label_formatter import MonthLabelFormatter
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
 
 
 class FinancialDashboardService:
     """Builds one ``FinancialDashboardSnapshot`` per requested calendar month."""
+
+    _LINKED_SPAN_MONTHS = 12
 
     def __init__(
         self,
@@ -32,6 +36,7 @@ class FinancialDashboardService:
         self._ledger = ledger
         self._cards = cards
         self._invest = investments
+        self._linked = LinkedBudgetCardAnalytics(book, cards)
 
     def build_snapshot(self, month_key: str) -> FinancialDashboardSnapshot:
         """Aggregate every dashboard block for ``yyyy-mm``."""
@@ -48,12 +53,13 @@ class FinancialDashboardService:
         bud = self._budget_category_rows(ws, mk)
         cc = self._credit_category_rows(mk)
         fl = self._flow_points(mk)
+        series = self._linked.build_series(mk, self._LINKED_SPAN_MONTHS)
         keys = self._month_picker_keys(mk)
         lab = MonthLabelFormatter.spanish_month_year(mk)
-        ins, heal = self._insight_health_bundle(mk, inc, dist, rem, cs, cd, cl, bud, cc)
+        ins, heal = self._insight_health_bundle(mk, inc, dist, rem, cs, cd, cl, bud, cc, series)
         money = self._money_dict(mk, lab, inc, dist, rem, cs, cd, cl, hint)
         inv = self._invest_dict(ic, iu, mc, mu, ic_rows, iu_rows)
-        tail = self._kw_tail(bud, cc, fl, ins, heal, keys)
+        tail = self._kw_tail(bud, cc, fl, series, ins, heal, keys)
         return FinancialDashboardSnapshot(**money, **inv, **tail)
 
     def _money_dict(
@@ -109,8 +115,10 @@ class FinancialDashboardService:
         cl: float,
         bud: list[tuple[str, float, float]],
         cc: list[tuple[str, float, float]],
+        series: list[LinkedPairSeries],
     ) -> tuple[list[str], list[tuple[str, str]]]:
         ins = self._insights(mk, dist, cs, cd, bud, cc)
+        self._append_link_insight(ins, series, mk)
         heal = self._health(inc, dist, rem, cd, cl, cs)
         return ins, heal
 
@@ -119,6 +127,7 @@ class FinancialDashboardService:
         bud: list[tuple[str, float, float]],
         cc: list[tuple[str, float, float]],
         fl: list[tuple[str, float, float]],
+        series: list[LinkedPairSeries],
         ins: list[str],
         heal: list[tuple[str, str]],
         keys: list[str],
@@ -127,6 +136,7 @@ class FinancialDashboardService:
             "budget_distribution_rows": bud,
             "credit_category_rows": cc,
             "flow_points": fl,
+            "linked_pair_series": series,
             "insights": ins,
             "health_rows": heal,
             "month_picker_keys": keys,
@@ -335,6 +345,33 @@ class FinancialDashboardService:
             return
         rounded = int(round(debt))
         lines.append(f"Deuda acumulada en tarjetas: aprox. {rounded} COP.")
+
+    def _append_link_insight(self, lines: list[str], series: list[LinkedPairSeries], mk: str) -> None:
+        worst = self._worst_overbudget_pair(series, mk)
+        if worst is None:
+            return
+        s, ratio = worst
+        over_pct = (ratio - 1.0) * 100.0
+        lines.append(f"«{s.label_path}» supera su presupuesto en TC en {over_pct:.0f}% este mes.")
+
+    def _worst_overbudget_pair(
+        self, series: list[LinkedPairSeries], mk: str
+    ) -> tuple[LinkedPairSeries, float] | None:
+        best: tuple[LinkedPairSeries, float] | None = None
+        for s in series:
+            actual = self._actual_for_month(s, mk)
+            if s.expected_cop <= 0 or actual <= s.expected_cop:
+                continue
+            ratio = actual / s.expected_cop
+            if best is None or ratio > best[1]:
+                best = (s, ratio)
+        return best
+
+    def _actual_for_month(self, series: LinkedPairSeries, mk: str) -> float:
+        for month, value in series.points:
+            if month == mk:
+                return value
+        return 0.0
 
     def _health(
         self,
