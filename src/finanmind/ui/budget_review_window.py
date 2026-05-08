@@ -70,11 +70,23 @@ class BudgetReviewWindow:
 
     def _mount_screen_body(self, outer: ctk.CTkFrame) -> None:
         self._render_topbar(outer)
-        self._render_hint(outer)
-        self._render_provider_strip(outer)
-        self._render_status_bar(outer)
-        self._attach_form_panel(outer)
-        self._attach_results_panel(outer)
+        body = self._open_body_scroll(outer)
+        self._render_hint(body)
+        self._render_provider_strip(body)
+        self._render_status_bar(body)
+        self._attach_form_panel(body)
+        self._attach_results_panel(body)
+
+    def _open_body_scroll(self, outer: ctk.CTkFrame) -> ctk.CTkScrollableFrame:
+        scroll = ctk.CTkScrollableFrame(
+            outer,
+            fg_color="transparent",
+            corner_radius=0,
+            scrollbar_button_color=BudgetUiTheme.BORDER,
+            scrollbar_button_hover_color=BudgetUiTheme.TXT_TER,
+        )
+        scroll.pack(fill="both", expand=True)
+        return scroll
 
     def _idle_status_text(self) -> str:
         vendor = self._vendor_human_name()
@@ -236,7 +248,9 @@ class BudgetReviewWindow:
         msg = (
             "Cuenta tu situación, envíala a la IA y recibe sugerencias para ajustar "
             "tu presupuesto actual. El proceso es idéntico; solo cambia el proveedor "
-            "(OpenAI cobra uso típico, Mistral ofrece plan Experiment gratuito)."
+            "(OpenAI cobra uso típico, Mistral ofrece plan Experiment gratuito). "
+            "También se envía tu salario mensual guardado en Presupuesto para que las "
+            "sugerencias repartan ese ingreso de forma equilibrada dentro del tope."
         )
         ctk.CTkLabel(
             outer,
@@ -263,11 +277,12 @@ class BudgetReviewWindow:
         card.attach()
         self._form = card
 
-    def _attach_results_panel(self, outer: ctk.CTkFrame) -> None:
-        host = ctk.CTkFrame(outer, fg_color="transparent")
-        host.pack(fill="both", expand=True)
-        panel = BudgetReviewResultsPanel(host, on_accept=self._handle_accept, on_reject=self._handle_reject)
-        self._results = panel
+    def _attach_results_panel(self, body: ctk.CTkFrame) -> None:
+        self._results = BudgetReviewResultsPanel(
+            body,
+            on_accept=self._handle_accept,
+            on_reject=self._handle_reject,
+        )
 
     def _handle_configure_ia(self) -> None:
         dialog = LlmSettingsDialog(self._host.winfo_toplevel())

@@ -31,7 +31,7 @@ class BudgetReviewResultsPanel:
         """Replace any previous render with a fresh result view."""
         self.clear()
         self._frame = ctk.CTkFrame(self._host, fg_color="transparent")
-        self._frame.pack(fill="both", expand=True, pady=(2, 0))
+        self._frame.pack(fill="x", expand=False, pady=(2, 0))
         self._mount_summary_card(result)
         self._mount_recommendations_section(result)
         self._mount_action_bar(result)
@@ -126,37 +126,38 @@ class BudgetReviewResultsPanel:
 
     def _mount_recommendations_section(self, result: BudgetReviewResult) -> None:
         assert self._frame is not None
+        self._heading_recommendations()
+        box = self._make_list_host()
+        if not result.recommendations:
+            self._render_empty(box)
+            return
+        for rec in result.recommendations:
+            BudgetReviewRecommendationRow(box, rec).attach()
+
+    def _heading_recommendations(self) -> None:
+        assert self._frame is not None
         ctk.CTkLabel(
             self._frame,
             text="Recomendaciones",
             font=ctk.CTkFont(size=14, weight="bold"),
             text_color=BudgetUiTheme.TXT_PRI,
         ).pack(anchor="w", pady=(2, 4))
-        scroll = self._make_scroll_panel()
-        if not result.recommendations:
-            self._render_empty(scroll)
-            return
-        for rec in result.recommendations:
-            BudgetReviewRecommendationRow(scroll, rec).attach()
 
-    def _make_scroll_panel(self) -> ctk.CTkScrollableFrame:
+    def _make_list_host(self) -> ctk.CTkFrame:
         assert self._frame is not None
-        scroll = ctk.CTkScrollableFrame(
+        host = ctk.CTkFrame(
             self._frame,
             fg_color=BudgetUiTheme.BG_CARD,
             corner_radius=12,
             border_width=1,
             border_color=BudgetUiTheme.BORDER,
-            scrollbar_button_color=BudgetUiTheme.BORDER,
-            scrollbar_button_hover_color=BudgetUiTheme.TXT_TER,
-            height=320,
         )
-        scroll.pack(fill="both", expand=True)
-        return scroll
+        host.pack(fill="x", pady=(0, 4))
+        return host
 
-    def _render_empty(self, scroll: ctk.CTkScrollableFrame) -> None:
+    def _render_empty(self, host: ctk.CTkFrame) -> None:
         ctk.CTkLabel(
-            scroll,
+            host,
             text="La IA no propuso cambios. Tu presupuesto luce bien para el contexto dado.",
             font=ctk.CTkFont(size=12),
             text_color=BudgetUiTheme.TXT_SEC,
