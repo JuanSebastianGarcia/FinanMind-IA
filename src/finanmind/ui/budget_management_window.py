@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+from collections.abc import Callable
 from tkinter import messagebox
 
 import customtkinter as ctk
@@ -23,17 +24,22 @@ from finanmind.ui.percentage_presenter import PercentagePresenter
 class BudgetManagementWindow:
     """Hosts CRUD controls plus horizontal category tables."""
 
-    def __init__(self, host: ctk.CTkFrame, book: BudgetBookService) -> None:
+    def __init__(
+        self,
+        host: ctk.CTkFrame,
+        book: BudgetBookService,
+        on_open_review: Callable[[], None] | None = None,
+    ) -> None:
         self._host = host
         self._book = book
+        self._on_open_review = on_open_review
         self._salary_primary_lbl: ctk.CTkLabel | None = None
         self._salary_sub_lbl: ctk.CTkLabel | None = None
         self._salary_badge_lbl: ctk.CTkLabel | None = None
         self._scroll: ctk.CTkScrollableFrame | None = None
 
     def attach(self) -> None:
-        """Mount widgets and hydrate from disk."""
-        self._book.load()
+        """Build widgets and fill them from current in-memory state."""
         outer = ctk.CTkFrame(self._host, fg_color=BudgetUiTheme.BG_MAIN)
         outer.pack(fill="both", expand=True, padx=20, pady=14)
         self._render_topbar(outer)
@@ -68,6 +74,7 @@ class BudgetManagementWindow:
         self._pack_topbar_heading(bar)
         self._pack_topbar_add_button(bar)
         self._pack_topbar_edit_salary_button(bar)
+        self._pack_topbar_review_button(bar)
 
     def _pack_topbar_heading(self, bar: ctk.CTkFrame) -> None:
         font = ctk.CTkFont(size=16, weight="bold")
@@ -103,6 +110,28 @@ class BudgetManagementWindow:
             height=32,
         )
         btn.pack(side="right", padx=0, pady=12)
+
+    def _pack_topbar_review_button(self, bar: ctk.CTkFrame) -> None:
+        btn = ctk.CTkButton(
+            bar,
+            text="Revisión de presupuesto",
+            command=self._handle_open_review,
+            fg_color=BudgetUiTheme.INFO_BG,
+            text_color=BudgetUiTheme.ACCENT,
+            hover_color=BudgetUiTheme.BTN_ADD_LABEL_BG,
+            corner_radius=8,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            height=32,
+            border_width=1,
+            border_color=BudgetUiTheme.ACCENT,
+        )
+        btn.pack(side="right", padx=(6, 6), pady=12)
+
+    def _handle_open_review(self) -> None:
+        if self._on_open_review is None:
+            messagebox.showinfo("Revisión IA", "La función de revisión no está disponible.")
+            return
+        self._on_open_review()
 
     def _mount_salary_card(self, outer: ctk.CTkFrame) -> None:
         card = ctk.CTkFrame(

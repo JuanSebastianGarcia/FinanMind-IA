@@ -24,3 +24,17 @@ Thumbs.db
 
 # Local CSV samples during development (optional)
 data/*.csv
+
+# Secrets (never commit OpenAI credentials)
+openai_api_key.txt
+**/openai_api_key.txt
+openai_model.txt
+**/openai_model.txt
+budget_ai_provider.txt
+**/budget_ai_provider.txt
+mistral_api_key.txt
+**/mistral_api_key.txt
+mistral_model.txt
+**/mistral_model.txt
+.env
+*.env
