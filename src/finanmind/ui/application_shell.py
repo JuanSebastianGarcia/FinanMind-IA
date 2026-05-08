@@ -9,13 +9,16 @@ import customtkinter as ctk
 from finanmind.budget.book_service import BudgetBookService
 from finanmind.budget.repository_factory import BudgetRepositoryFactory
 from finanmind.repositories.credit_card_repository_factory import CreditCardRepositoryFactory
+from finanmind.repositories.investment_repository_factory import InvestmentRepositoryFactory
 from finanmind.repositories.monthly_distribution_repository_factory import MonthlyDistributionRepositoryFactory
 from finanmind.services.credit_card_service import CreditCardService
+from finanmind.services.investment_service import InvestmentService
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
 from finanmind.ui.budget_management_window import BudgetManagementWindow
 from finanmind.ui.budget_review_window import BudgetReviewWindow
 from finanmind.ui.budget_ui_theme import BudgetUiTheme
 from finanmind.ui.credit_cards_router import CreditCardsRouter
+from finanmind.ui.investment_management_window import InvestmentManagementWindow
 from finanmind.ui.monthly_distribution_window import MonthlyDistributionWindow
 
 
@@ -29,6 +32,7 @@ class ApplicationShell:
         self._shared_book = self._make_shared_book()
         self._ledger = self._make_ledger()
         self._cards_service = self._make_cards_service()
+        self._investments_service = self._make_investments_service()
         self._configure_window_chrome()
         self._assemble_body()
 
@@ -37,16 +41,19 @@ class ApplicationShell:
         self._budget_nav_btn: ctk.CTkButton | None = None
         self._dist_nav_btn: ctk.CTkButton | None = None
         self._cards_nav_btn: ctk.CTkButton | None = None
+        self._investments_nav_btn: ctk.CTkButton | None = None
         self._active_panel = "budget"
 
     def _init_panel_handles(self) -> None:
         self._budget_layer: ctk.CTkFrame | None = None
         self._dist_layer: ctk.CTkFrame | None = None
         self._cards_layer: ctk.CTkFrame | None = None
+        self._investments_layer: ctk.CTkFrame | None = None
         self._review_layer: ctk.CTkFrame | None = None
         self._budget_viewer: BudgetManagementWindow | None = None
         self._dist_viewer: MonthlyDistributionWindow | None = None
         self._cards_router: CreditCardsRouter | None = None
+        self._investments_viewer: InvestmentManagementWindow | None = None
         self._review_viewer: BudgetReviewWindow | None = None
 
     def present_initial_panel(self) -> None:
@@ -54,8 +61,19 @@ class ApplicationShell:
         self._build_budget_layer()
         self._build_dist_layer()
         self._build_cards_layer()
+        self._build_investments_layer()
         self._build_review_layer()
         self.show_budget_view()
+
+    def show_investments_view(self) -> None:
+        """Lift the investments panel and refresh totals from disk."""
+        assert self._investments_layer is not None and self._investments_viewer is not None
+        self._root.title("Finanmind — Gestión de inversiones")
+        self._investments_service.load()
+        self._investments_viewer.refresh()
+        self._investments_layer.lift()
+        self._active_panel = "investments"
+        self._apply_nav_styles()
 
     def show_credit_cards_view(self) -> None:
         """Lift the credit-cards panel; widgets are reused, only z-order changes."""
@@ -108,6 +126,11 @@ class ApplicationShell:
         service.load()
         return service
 
+    def _make_investments_service(self) -> InvestmentService:
+        service = InvestmentService(InvestmentRepositoryFactory.from_app_config())
+        service.load()
+        return service
+
     def _build_budget_layer(self) -> None:
         assert self._content_host is not None
         layer = ctk.CTkFrame(self._content_host, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=0)
@@ -153,6 +176,15 @@ class ApplicationShell:
         self._cards_layer = layer
         self._cards_router = router
 
+    def _build_investments_layer(self) -> None:
+        assert self._content_host is not None
+        layer = ctk.CTkFrame(self._content_host, fg_color=BudgetUiTheme.BG_MAIN, corner_radius=0)
+        layer.place(x=0, y=0, relwidth=1, relheight=1)
+        viewer = InvestmentManagementWindow(layer, self._investments_service)
+        viewer.attach()
+        self._investments_layer = layer
+        self._investments_viewer = viewer
+
     def _configure_window_chrome(self) -> None:
         self._root.minsize(1000, 620)
 
@@ -178,6 +210,7 @@ class ApplicationShell:
         self._add_budget_button(rail)
         self._add_distribution_button(rail)
         self._add_credit_cards_button(rail)
+        self._add_investments_button(rail)
         self._add_future_button(rail, "Ingresos")
         self._add_future_button(rail, "Metas")
         self._add_sidebar_footer(rail)
@@ -189,7 +222,9 @@ class ApplicationShell:
         lbl.pack(side="bottom", anchor="w", padx=16, pady=14)
 
     def _apply_nav_styles(self) -> None:
-        if self._budget_nav_btn is None or self._dist_nav_btn is None:
+        if self._budget_nav_btn is None or self._dist_nav_btn is None or self._cards_nav_btn is None:
+            return
+        if self._investments_nav_btn is None:
             return
         active_bg = BudgetUiTheme.SIDEBAR_ACTIVE_BG
         muted = BudgetUiTheme.SIDEBAR_MUTE
@@ -197,6 +232,7 @@ class ApplicationShell:
         self._tint_nav_button(self._budget_nav_btn, "budget", active_bg, lit, muted)
         self._tint_nav_button(self._dist_nav_btn, "distribution", active_bg, lit, muted)
         self._tint_nav_button(self._cards_nav_btn, "cards", active_bg, lit, muted)
+        self._tint_nav_button(self._investments_nav_btn, "investments", active_bg, lit, muted)
 
     def _tint_nav_button(
         self,
@@ -276,6 +312,23 @@ class ApplicationShell:
         )
         btn.pack(fill="x", padx=8, pady=1)
         self._cards_nav_btn = btn
+
+    def _add_investments_button(self, rail: ctk.CTkFrame) -> None:
+        btn = ctk.CTkButton(
+            rail,
+            text="  Inversiones",
+            anchor="w",
+            font=ctk.CTkFont(size=13),
+            height=38,
+            fg_color="transparent",
+            hover_color=BudgetUiTheme.SIDEBAR_ACTIVE_BG,
+            text_color=BudgetUiTheme.SIDEBAR_MUTE,
+            border_width=0,
+            corner_radius=8,
+            command=self.show_investments_view,
+        )
+        btn.pack(fill="x", padx=8, pady=1)
+        self._investments_nav_btn = btn
 
     def _add_future_button(self, rail: ctk.CTkFrame, caption: str) -> None:
         btn = ctk.CTkButton(
