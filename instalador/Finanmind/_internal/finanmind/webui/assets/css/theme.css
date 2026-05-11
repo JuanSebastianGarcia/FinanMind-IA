@@ -1,0 +1,30 @@
+/* Design tokens that mirror the original BudgetUiTheme colours. */
+:root {
+  --accent: #4f8ef7;
+  --accent-hover: #3d7de4;
+  --bg-main: #f5f6fa;
+  --bg-card: #ffffff;
+  --bg-hover: #f1f5f9;
+  --txt-pri: #111827;
+  --txt-sec: #6b7280;
+  --txt-ter: #9ca3af;
+  --border: #e5e7eb;
+  --red: #ef4444;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --icon-salary-bg: #e8f0fe;
+  --btn-add-label-bg: #dbeafe;
+  --btn-add-label-fg: #1d4ed8;
+  --sidebar-bg: #181f2e;
+  --sidebar-txt: #ffffff;
+  --sidebar-mute: #6b7a99;
+  --sidebar-active-bg: #262f42;
+  --sidebar-rule: #2d3748;
+  --badge-ok-bg: #dcfce7;
+  --badge-ok-fg: #166534;
+  --badge-warn-bg: #fee2e2;
+  --badge-warn-fg: #dc2626;
+  --info-bg: #eff6ff;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0 24px 48px rgba(15, 23, 42, 0.18);
+}

@@ -22,6 +22,7 @@ where = ["src"]
 "finanmind" = [
     "webui/index.html",
     "webui/assets/css/*.css",
+    "webui/assets/icons/*",
     "webui/assets/js/*.js",
     "webui/assets/js/core/*.js",
     "webui/assets/js/format/*.js",
@@ -31,4 +32,7 @@ where = ["src"]
     "webui/assets/js/distribution/dialogs/*.js",
     "webui/assets/js/cards/*.js",
     "webui/assets/js/cards/dialogs/*.js",
+    "webui/assets/js/investments/*.js",
+    "webui/assets/js/investments/dialogs/*.js",
+    "webui/assets/js/dashboard/*.js",
 ]

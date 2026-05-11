@@ -1,0 +1,581 @@
+/* Investments panel styling: topbar, summary strip, list, donut charts, IA review. */
+.invest {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.invest__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  height: 56px;
+  padding: 0 20px;
+}
+
+.invest__topbar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest__topbar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.invest__hint {
+  font-size: 12px;
+  color: var(--txt-sec);
+  margin: 8px 0 8px;
+}
+
+/* Summary strip */
+.invest-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.invest-summary__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.invest-summary__caption {
+  font-size: 11px;
+  color: var(--txt-sec);
+  margin-bottom: 2px;
+}
+
+.invest-summary__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+/* Body split */
+.invest__body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(420px, 3fr) minmax(360px, 2fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.invest__col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.invest__col-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* Investment row card */
+.invest-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.invest-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invest-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest-card__share {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.invest-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invest-card__currency {
+  background: var(--info-bg);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.invest-card__amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest-card__date {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--txt-ter);
+}
+
+.invest-card__note {
+  font-size: 11px;
+  color: var(--txt-sec);
+  line-height: 1.35;
+}
+
+.invest-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.invest-card__btn {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  color: var(--txt-pri);
+  font-size: 11px;
+}
+
+.invest-card__btn:hover {
+  background: var(--bg-hover);
+}
+
+.invest-card__btn--danger {
+  border-color: var(--red);
+  color: var(--red);
+  background: transparent;
+}
+
+.invest-card__btn--danger:hover {
+  background: var(--badge-warn-bg);
+}
+
+.invest__empty {
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.invest__empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  margin-bottom: 4px;
+}
+
+.invest__empty-body {
+  font-size: 12px;
+  color: var(--txt-sec);
+}
+
+/* Currency chart blocks */
+.invest-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invest-chart__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest-donut {
+  display: flex;
+  justify-content: center;
+}
+
+.invest-donut__svg {
+  width: 240px;
+  height: 240px;
+}
+
+.invest-donut__hint {
+  color: var(--txt-ter);
+  font-size: 12px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.invest-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invest-legend__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invest-legend__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.invest-legend__label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  overflow-wrap: anywhere;
+}
+
+.invest-legend__values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.invest-legend__pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.invest-legend__amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+/* AI review section */
+.invest-ia {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invest-ia__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invest-ia__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest-ia__hint {
+  font-size: 12px;
+  color: var(--txt-sec);
+  line-height: 1.4;
+}
+
+.invest-ia__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.invest-ia__row-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt-pri);
+}
+
+.invest-ia__row-hint {
+  font-size: 11px;
+  color: var(--txt-ter);
+}
+
+.invest-ia__rate-input {
+  height: 30px;
+  width: 120px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-main);
+  color: var(--txt-pri);
+  text-align: right;
+}
+
+.invest-ia__rules-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--bg-card);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.invest-ia__rules-btn:hover {
+  background: var(--info-bg);
+}
+
+.invest-ia__status {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt-ter);
+  min-height: 16px;
+}
+
+.invest-ia__status--accent {
+  color: var(--accent);
+}
+
+.invest-ia__status--green {
+  color: var(--green);
+}
+
+.invest-ia__status--red {
+  color: var(--red);
+}
+
+.invest-ia__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Review results */
+.invest-ia__results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.invest-ia__summary-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.invest-ia__summary-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  margin-bottom: 4px;
+}
+
+.invest-ia__summary-body {
+  font-size: 12px;
+  color: var(--txt-sec);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.invest-ia__risk-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.invest-ia__risk-caption {
+  font-size: 11px;
+  color: var(--txt-ter);
+}
+
+.invest-ia__risk-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.invest-ia__risk-badge--low {
+  background: var(--badge-ok-bg);
+  color: var(--badge-ok-fg);
+}
+
+.invest-ia__risk-badge--medium {
+  background: var(--info-bg);
+  color: var(--accent);
+}
+
+.invest-ia__risk-badge--high {
+  background: var(--badge-warn-bg);
+  color: var(--badge-warn-fg);
+}
+
+.invest-ia__section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  margin-top: 6px;
+}
+
+.invest-ia__section-host {
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.invest-ia__section-empty {
+  font-size: 12px;
+  color: var(--txt-sec);
+  padding: 10px 12px;
+}
+
+.invest-ia__note {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.invest-ia__note-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  margin-bottom: 4px;
+}
+
+.invest-ia__note-detail {
+  font-size: 12px;
+  color: var(--txt-sec);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.invest-ia__bullet {
+  font-size: 12px;
+  color: var(--txt-sec);
+  line-height: 1.45;
+  padding: 4px 12px;
+}
+
+/* Rules dialog list */
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.rules-list__row {
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rules-list__text {
+  font-size: 12px;
+  color: var(--txt-pri);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.rules-list__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.rules-list__empty {
+  font-size: 12px;
+  color: var(--txt-sec);
+  padding: 16px;
+  text-align: center;
+}
+
+.field-textarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--txt-pri);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.field-textarea:focus {
+  border-color: var(--accent);
+}
+
+.segmented {
+  display: inline-flex;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented__btn {
+  height: 32px;
+  padding: 0 14px;
+  background: transparent;
+  border: none;
+  color: var(--txt-sec);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented__btn[data-active="true"] {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.amount-help {
+  font-size: 11px;
+  color: var(--txt-ter);
+  margin-top: 2px;
+}

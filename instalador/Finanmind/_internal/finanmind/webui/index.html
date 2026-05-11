@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Finanmind</title>
+    <link rel="stylesheet" href="./assets/css/base.css" />
+    <link rel="stylesheet" href="./assets/css/theme.css" />
+    <link rel="stylesheet" href="./assets/css/layout.css" />
+    <link rel="stylesheet" href="./assets/css/budget.css" />
+    <link rel="stylesheet" href="./assets/css/distribution.css" />
+    <link rel="stylesheet" href="./assets/css/cards.css" />
+    <link rel="stylesheet" href="./assets/css/investments.css" />
+    <link rel="stylesheet" href="./assets/css/dashboard.css" />
+    <link rel="stylesheet" href="./assets/css/budget_review.css" />
+    <link rel="stylesheet" href="./assets/css/dialogs.css" />
+  </head>
+  <body>
+    <div id="app-shell" class="app-shell">
+      <aside id="sidebar" class="sidebar"></aside>
+      <main id="content-host" class="content-host">
+        <section id="dashboard-panel" class="panel panel--active" data-panel="dashboard"></section>
+        <section id="budget-panel" class="panel" data-panel="budget"></section>
+        <section id="distribution-panel" class="panel" data-panel="distribution"></section>
+        <section id="cards-panel" class="panel" data-panel="cards"></section>
+        <section id="investments-panel" class="panel" data-panel="investments"></section>
+      </main>
+    </div>
+    <div id="modal-root" class="modal-root" aria-hidden="true"></div>
+    <div id="toast-root" class="toast-root"></div>
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>

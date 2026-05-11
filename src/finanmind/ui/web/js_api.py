@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from finanmind.ui.web.bridges.budget_bridge import BudgetBridge
+from finanmind.ui.web.bridges.budget_review_bridge import BudgetReviewBridge
 from finanmind.ui.web.bridges.cards_bridge import CardsBridge
+from finanmind.ui.web.bridges.dashboard_bridge import DashboardBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
+from finanmind.ui.web.bridges.investment_bridge import InvestmentBridge
+from finanmind.ui.web.bridges.investment_review_bridge import InvestmentReviewBridge
 
 
 class JsApi:
@@ -15,10 +19,18 @@ class JsApi:
         budget_bridge: BudgetBridge,
         distribution_bridge: DistributionBridge,
         cards_bridge: CardsBridge,
+        investment_bridge: InvestmentBridge,
+        investment_review_bridge: InvestmentReviewBridge,
+        dashboard_bridge: DashboardBridge,
+        budget_review_bridge: BudgetReviewBridge,
     ) -> None:
         self._budget = budget_bridge
         self._distribution = distribution_bridge
         self._cards = cards_bridge
+        self._investments = investment_bridge
+        self._review = investment_review_bridge
+        self._dashboard = dashboard_bridge
+        self._budget_review = budget_review_bridge
 
     def get_budget_state(self) -> dict:
         """Return the full Budget workspace snapshot for the UI to render."""
@@ -231,3 +243,104 @@ class JsApi:
     def delete_card_payment(self, payment_id: str) -> None:
         """Remove one payment from the card history."""
         self._cards.delete_payment(payment_id)
+
+    def get_investments_state(self) -> dict:
+        """Return the full Investments panel snapshot (summary, entries, charts)."""
+        return self._investments.get_state()
+
+    def add_investment_category(self, name: str) -> dict:
+        """Persist a new investment category and return the refreshed state."""
+        return self._investments.add_category(name)
+
+    def update_investment_category(self, category_id: str, name: str) -> dict:
+        """Rename one investment category and return the refreshed state."""
+        return self._investments.update_category(category_id, name)
+
+    def delete_investment_category(self, category_id: str) -> dict:
+        """Drop one investment category and return the refreshed state."""
+        return self._investments.delete_category(category_id)
+
+    def add_investment_entry(
+        self,
+        category_id: str,
+        amount: float,
+        invested_date_iso: str,
+        description: str,
+        currency_code: str,
+    ) -> dict:
+        """Register a new holding and return the refreshed state."""
+        return self._investments.add_entry(
+            category_id, amount, invested_date_iso, description, currency_code,
+        )
+
+    def update_investment_entry(
+        self,
+        investment_id: str,
+        category_id: str,
+        amount: float,
+        invested_date_iso: str,
+        description: str,
+        currency_code: str,
+    ) -> dict:
+        """Edit an existing holding and return the refreshed state."""
+        return self._investments.update_entry(
+            investment_id, category_id, amount, invested_date_iso, description, currency_code,
+        )
+
+    def delete_investment_entry(self, investment_id: str) -> dict:
+        """Remove one holding and return the refreshed state."""
+        return self._investments.delete_entry(investment_id)
+
+    def get_investment_review_setup(self) -> dict:
+        """Return rules, exchange rate, AI status, and credentials readiness."""
+        return self._review.get_setup()
+
+    def add_investment_review_rule(self, text: str) -> list[dict]:
+        """Append a new personal rule and return the refreshed rules list."""
+        return self._review.add_rule(text)
+
+    def update_investment_review_rule(self, rule_id: str, text: str) -> list[dict]:
+        """Edit an existing personal rule and return the refreshed rules list."""
+        return self._review.update_rule(rule_id, text)
+
+    def delete_investment_review_rule(self, rule_id: str) -> list[dict]:
+        """Remove one personal rule and return the refreshed rules list."""
+        return self._review.delete_rule(rule_id)
+
+    def run_investment_review(self, rate: float) -> dict:
+        """Submit the portfolio to the AI and return the review payload."""
+        return self._review.analyze(rate)
+
+    def get_dashboard_state(self, preferred_month: str = "") -> dict:
+        """Return the cross-domain dashboard snapshot for ``yyyy-mm``."""
+        return self._dashboard.get_state(preferred_month)
+
+    def get_budget_review_setup(self) -> dict:
+        """Return AI vendor + model and credentials readiness for the review dialog."""
+        return self._budget_review.get_setup()
+
+    def set_budget_review_provider(self, vendor: str) -> dict:
+        """Persist the quick provider choice and return the refreshed setup."""
+        return self._budget_review.set_provider(vendor)
+
+    def run_budget_review(self, context: str) -> dict:
+        """Submit the workspace plus free-form context and return the AI payload."""
+        return self._budget_review.run_review(context)
+
+    def apply_budget_review_recommendations(self, recommendations: list[dict]) -> dict:
+        """Apply accepted recommendations and return ``{changed, state}`` with the new workspace."""
+        changed = self._budget_review.apply_recommendations(recommendations)
+        return {"changed": changed, "state": self._budget.get_state()}
+
+    def get_budget_review_llm_settings(self) -> dict:
+        """Return the per-vendor API key, model and env locks for the settings dialog."""
+        return self._budget_review.get_llm_settings()
+
+    def save_budget_review_llm_settings(
+        self,
+        provider: str,
+        api_key: str,
+        model_id: str,
+    ) -> dict:
+        """Persist provider + credentials and return the refreshed review setup."""
+        return self._budget_review.save_llm_settings(provider, api_key, model_id)

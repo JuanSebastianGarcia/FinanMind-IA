@@ -32,10 +32,13 @@ class CardsCyclesResolver:
 
     @classmethod
     def coerce_active(cls, cycle_keys: list[str], preferred: str) -> str:
-        """Pick the preferred cycle when valid, otherwise the most recent one."""
+        """Pick the preferred cycle when valid, otherwise the current month."""
         token = (preferred or "").strip()
         if token in cycle_keys:
             return token
+        current = cls.current_cycle_key()
+        if current in cycle_keys:
+            return current
         return cycle_keys[0]
 
     @classmethod

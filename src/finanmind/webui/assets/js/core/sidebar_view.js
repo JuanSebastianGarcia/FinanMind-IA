@@ -6,7 +6,7 @@ export class SidebarView {
     this._host = host;
     this._items = SidebarView._buildItems();
     this._buttons = new Map();
-    this._activeKey = "budget";
+    this._activeKey = "dashboard";
     this._onSelect = null;
   }
 
@@ -31,7 +31,6 @@ export class SidebarView {
       { key: "distribution", label: "Distribución mensual" },
       { key: "cards", label: "Deudas" },
       { key: "investments", label: "Inversiones" },
-      { key: "goals", label: "Metas" },
     ];
   }
 
