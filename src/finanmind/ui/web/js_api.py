@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from finanmind.ui.web.bridges.budget_bridge import BudgetBridge
+from finanmind.ui.web.bridges.cards_bridge import CardsBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 
 
@@ -13,9 +14,11 @@ class JsApi:
         self,
         budget_bridge: BudgetBridge,
         distribution_bridge: DistributionBridge,
+        cards_bridge: CardsBridge,
     ) -> None:
         self._budget = budget_bridge
         self._distribution = distribution_bridge
+        self._cards = cards_bridge
 
     def get_budget_state(self) -> dict:
         """Return the full Budget workspace snapshot for the UI to render."""
@@ -113,3 +116,118 @@ class JsApi:
     def delete_distribution_line(self, line_id: str) -> None:
         """Remove one allocation row."""
         self._distribution.delete_line(line_id)
+
+    def get_cards_dashboard_state(self) -> dict:
+        """Return the snapshot used by the credit-cards dashboard grid."""
+        return self._cards.dashboard_state()
+
+    def get_card_detail_state(self, card_id: str, preferred_cycle: str = "") -> dict:
+        """Return the snapshot used by a single credit-card detail view."""
+        return self._cards.detail_state(card_id, preferred_cycle)
+
+    def get_cards_label_options(self) -> list[dict]:
+        """Return the budget-label options used by the card-category dialog."""
+        return self._cards.label_options()
+
+    def get_cards_palette_presets(self) -> list[str]:
+        """Return the preset colours shared with the budget palette."""
+        return self._cards.palette_presets()
+
+    def add_card(
+        self,
+        name: str,
+        limit: float,
+        cut_day: int,
+        payment_due_day: int,
+        color: str = "",
+    ) -> dict:
+        """Persist a new credit card and return its id."""
+        return self._cards.add_card(name, limit, cut_day, payment_due_day, color)
+
+    def update_card(
+        self,
+        card_id: str,
+        name: str,
+        limit: float,
+        cut_day: int,
+        payment_due_day: int,
+        color: str = "",
+    ) -> None:
+        """Edit one credit card in place."""
+        self._cards.update_card(card_id, name, limit, cut_day, payment_due_day, color)
+
+    def delete_card(self, card_id: str) -> None:
+        """Remove a card with all its categories, expenses and payments."""
+        self._cards.delete_card(card_id)
+
+    def add_card_category(
+        self,
+        card_id: str,
+        title: str,
+        color: str = "",
+        link_id: str = "",
+    ) -> None:
+        """Append a new expense category bound to a card."""
+        self._cards.add_category(card_id, title, color, link_id)
+
+    def update_card_category(
+        self,
+        category_id: str,
+        title: str,
+        color: str = "",
+        link_id: str = "",
+    ) -> None:
+        """Edit one card category and (re)apply its budget-label link."""
+        self._cards.update_category(category_id, title, color, link_id)
+
+    def delete_card_category(self, category_id: str) -> None:
+        """Remove one card category, clearing it from existing expenses."""
+        self._cards.delete_category(category_id)
+
+    def add_card_expense(
+        self,
+        card_id: str,
+        category_id: str,
+        occurred_on: str,
+        amount: float,
+        description: str,
+        installments: int = 1,
+        notes: str = "",
+    ) -> None:
+        """Append a new charge under a card."""
+        self._cards.add_expense(
+            card_id, category_id, occurred_on, amount, description, installments, notes,
+        )
+
+    def update_card_expense(
+        self,
+        expense_id: str,
+        category_id: str,
+        occurred_on: str,
+        amount: float,
+        description: str,
+        installments: int = 1,
+        notes: str = "",
+    ) -> None:
+        """Edit an existing charge in place."""
+        self._cards.update_expense(
+            expense_id, category_id, occurred_on, amount, description, installments, notes,
+        )
+
+    def delete_card_expense(self, expense_id: str) -> None:
+        """Remove one charge."""
+        self._cards.delete_expense(expense_id)
+
+    def add_card_payment(
+        self,
+        card_id: str,
+        paid_on: str,
+        amount: float,
+        notes: str = "",
+    ) -> None:
+        """Register a payment for one card."""
+        self._cards.add_payment(card_id, paid_on, amount, notes)
+
+    def delete_card_payment(self, payment_id: str) -> None:
+        """Remove one payment from the card history."""
+        self._cards.delete_payment(payment_id)

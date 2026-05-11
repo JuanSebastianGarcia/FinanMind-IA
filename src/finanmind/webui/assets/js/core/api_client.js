@@ -71,4 +71,68 @@ export class ApiClient {
   deleteDistributionLine(lineId) {
     return this._api.delete_distribution_line(lineId);
   }
+
+  getCardsDashboardState() {
+    return this._api.get_cards_dashboard_state();
+  }
+
+  getCardDetailState(cardId, preferredCycle) {
+    return this._api.get_card_detail_state(cardId, preferredCycle || "");
+  }
+
+  getCardsLabelOptions() {
+    return this._api.get_cards_label_options();
+  }
+
+  getCardsPalettePresets() {
+    return this._api.get_cards_palette_presets();
+  }
+
+  addCard(name, limit, cutDay, paymentDueDay, color) {
+    return this._api.add_card(name, limit, cutDay, paymentDueDay, color || "");
+  }
+
+  updateCard(cardId, name, limit, cutDay, paymentDueDay, color) {
+    return this._api.update_card(cardId, name, limit, cutDay, paymentDueDay, color || "");
+  }
+
+  deleteCard(cardId) {
+    return this._api.delete_card(cardId);
+  }
+
+  addCardCategory(cardId, title, color, linkId) {
+    return this._api.add_card_category(cardId, title, color || "", linkId || "");
+  }
+
+  updateCardCategory(categoryId, title, color, linkId) {
+    return this._api.update_card_category(categoryId, title, color || "", linkId || "");
+  }
+
+  deleteCardCategory(categoryId) {
+    return this._api.delete_card_category(categoryId);
+  }
+
+  addCardExpense(cardId, categoryId, occurredOn, amount, description, installments, notes) {
+    return this._api.add_card_expense(
+      cardId, categoryId || "", occurredOn, amount, description, installments || 1, notes || "",
+    );
+  }
+
+  updateCardExpense(expenseId, categoryId, occurredOn, amount, description, installments, notes) {
+    return this._api.update_card_expense(
+      expenseId, categoryId || "", occurredOn, amount, description, installments || 1, notes || "",
+    );
+  }
+
+  deleteCardExpense(expenseId) {
+    return this._api.delete_card_expense(expenseId);
+  }
+
+  addCardPayment(cardId, paidOn, amount, notes) {
+    return this._api.add_card_payment(cardId, paidOn, amount, notes || "");
+  }
+
+  deleteCardPayment(paymentId) {
+    return this._api.delete_card_payment(paymentId);
+  }
 }

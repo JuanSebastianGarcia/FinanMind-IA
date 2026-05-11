@@ -13,6 +13,7 @@ from finanmind.repositories.monthly_distribution_repository_factory import (
 from finanmind.services.credit_card_service import CreditCardService
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
 from finanmind.ui.web.bridges.budget_bridge import BudgetBridge
+from finanmind.ui.web.bridges.cards_bridge import CardsBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 from finanmind.ui.web.frontend_assets import FrontendAssetsLocator
 from finanmind.ui.web.js_api import JsApi
@@ -36,7 +37,11 @@ class WebApplication:
         book = cls._make_book_service()
         cards = cls._make_cards_service()
         ledger = cls._make_distribution_service()
-        return JsApi(BudgetBridge(book, cards), DistributionBridge(book, ledger))
+        return JsApi(
+            BudgetBridge(book, cards),
+            DistributionBridge(book, ledger),
+            CardsBridge(book, cards),
+        )
 
     @classmethod
     def _make_book_service(cls) -> BudgetBookService:

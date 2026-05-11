@@ -29,4 +29,6 @@ where = ["src"]
     "webui/assets/js/budget/dialogs/*.js",
     "webui/assets/js/distribution/*.js",
     "webui/assets/js/distribution/dialogs/*.js",
+    "webui/assets/js/cards/*.js",
+    "webui/assets/js/cards/dialogs/*.js",
 ]

@@ -4,6 +4,7 @@ import { PanelRouter } from "./panel_router.js";
 import { SidebarView } from "./sidebar_view.js";
 import { ToastHost } from "./toast_host.js";
 import { BudgetPanel } from "../budget/budget_panel.js";
+import { CardsPanel } from "../cards/cards_panel.js";
 import { DistributionPanel } from "../distribution/distribution_panel.js";
 
 export class AppController {
@@ -26,6 +27,7 @@ export class AppController {
   _registerPanels() {
     this._registerPanel("budget", BudgetPanel, "budget-panel");
     this._registerPanel("distribution", DistributionPanel, "distribution-panel");
+    this._registerPanel("cards", CardsPanel, "cards-panel");
   }
 
   _registerPanel(key, PanelClass, hostId) {
