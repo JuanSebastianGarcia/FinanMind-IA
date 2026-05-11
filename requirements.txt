@@ -1,4 +1,4 @@
 customtkinter>=5.2
 
-# Executable packaging (when you build .exe):
-# pyinstaller>=6.0
+# Executable packaging (used by instalador/installer_builder.py to build .exe)
+pyinstaller>=6.0

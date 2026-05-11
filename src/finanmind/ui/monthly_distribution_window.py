@@ -637,12 +637,18 @@ class MonthlyDistributionWindow:
         spent: float,
         diff: float,
     ) -> None:
-        self._mount_summary_diff_cell(row, diff)
+        self._mount_summary_diff_cell(row, spent, budget_amt, diff)
         self._mount_summary_spent_cell(row, spent)
         self._mount_summary_budget_cell(row, budget_amt)
 
-    def _mount_summary_diff_cell(self, row: ctk.CTkFrame, diff: float) -> None:
-        tone = BudgetUiTheme.RED if diff < 0 else BudgetUiTheme.GREEN
+    def _mount_summary_diff_cell(
+        self,
+        row: ctk.CTkFrame,
+        spent: float,
+        budget_amt: float,
+        diff: float,
+    ) -> None:
+        tone = self._resolve_diff_tone(spent, budget_amt)
         ctk.CTkLabel(
             row,
             text=CurrencyPresenter.format_cop(diff),
@@ -651,6 +657,17 @@ class MonthlyDistributionWindow:
             text_color=tone,
             font=ctk.CTkFont(size=12, weight="bold"),
         ).pack(side="right", padx=(4, 4))
+
+    def _resolve_diff_tone(self, spent: float, budget_amt: float) -> str:
+        # Tolerance covers float drift on whole-peso COP amounts.
+        eps = 0.5
+        if spent <= eps:
+            return BudgetUiTheme.TXT_PRI
+        if spent > budget_amt + eps:
+            return BudgetUiTheme.RED
+        if abs(spent - budget_amt) <= eps:
+            return BudgetUiTheme.GREEN
+        return BudgetUiTheme.AMBER
 
     def _mount_summary_spent_cell(self, row: ctk.CTkFrame, spent: float) -> None:
         ctk.CTkLabel(

@@ -15,6 +15,11 @@ build/
 dist/
 *.egg-info/
 *.egg
+*.spec
+instalador/build/
+instalador/dist/
+instalador/*.spec
+instalador/*.exe
 
 # IDE / OS
 .idea/

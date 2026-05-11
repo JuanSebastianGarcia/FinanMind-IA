@@ -13,6 +13,7 @@ from finanmind.models.budget_workspace import BudgetWorkspace
 from finanmind.services.cop_amount_parser import CopAmountParser
 from finanmind.ui.budget_ui_theme import BudgetUiTheme
 from finanmind.ui.iso_date_picker_row import IsoDatePickerRow
+from finanmind.ui.searchable_dropdown import SearchableDropdown
 
 
 class DistributionLineDialog:
@@ -30,7 +31,7 @@ class DistributionLineDialog:
         self._pairs = self._flatten_labels(workspace)
         self._result: tuple[str, str, float, str] | None = None
         self._win: ctk.CTkToplevel | None = None
-        self._menu: ctk.CTkOptionMenu | None = None
+        self._dropdown: SearchableDropdown | None = None
         self._date_row: IsoDatePickerRow | None = None
         self._amount_entry: ctk.CTkEntry | None = None
         self._memo_entry: ctk.CTkEntry | None = None
@@ -113,20 +114,9 @@ class DistributionLineDialog:
 
     def _mount_label_choice(self, body: ctk.CTkFrame) -> None:
         ctk.CTkLabel(body, text="Etiqueta", text_color=BudgetUiTheme.TXT_SEC, anchor="w").pack(anchor="w")
-        captions = [cap for cap, _ in self._pairs]
-        menu = ctk.CTkOptionMenu(
-            body,
-            values=captions,
-            height=36,
-            fg_color=BudgetUiTheme.BG_MAIN,
-            button_color=BudgetUiTheme.BORDER,
-            button_hover_color=BudgetUiTheme.TXT_TER,
-            dropdown_fg_color=BudgetUiTheme.BG_CARD,
-            text_color=BudgetUiTheme.TXT_PRI,
-        )
-        menu.pack(fill="x", pady=(4, 12))
-        menu.set(captions[0])
-        self._menu = menu
+        self._dropdown = SearchableDropdown(self._pairs, placeholder="Escribe para buscar etiqueta…")
+        entry = self._dropdown.attach(body)
+        entry.pack(fill="x", pady=(4, 12))
 
     def _mount_date_choice(self, body: ctk.CTkFrame) -> None:
         ctk.CTkLabel(body, text="Fecha", text_color=BudgetUiTheme.TXT_SEC, anchor="w").pack(anchor="w")
@@ -171,9 +161,8 @@ class DistributionLineDialog:
         self._shutdown()
 
     def _read_payload(self) -> tuple[str, str, float, str] | None:
-        assert self._menu and self._date_row and self._amount_entry and self._memo_entry
-        caption = self._menu.get()
-        label_id = self._label_id_for_caption(caption)
+        assert self._dropdown and self._date_row and self._amount_entry and self._memo_entry
+        label_id = self._dropdown.get_selected_key()
         if label_id is None:
             messagebox.showwarning("Distribución", "Selecciona una etiqueta válida.")
             return None
@@ -193,12 +182,6 @@ class DistributionLineDialog:
     def _shutdown(self) -> None:
         if self._win is not None:
             self._win.destroy()
-
-    def _label_id_for_caption(self, caption: str) -> str | None:
-        for cap, lid in self._pairs:
-            if cap == caption:
-                return lid
-        return None
 
     def _flatten_labels(self, workspace: BudgetWorkspace) -> list[tuple[str, str]]:
         pairs: list[tuple[str, str]] = []
