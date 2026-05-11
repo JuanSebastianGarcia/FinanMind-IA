@@ -1,4 +1,7 @@
 customtkinter>=5.2
 
+# Web-based UI window (HTML/CSS/JS rendered via a native chromium webview)
+pywebview>=6.0,<7
+
 # Executable packaging (used by instalador/installer_builder.py to build .exe)
 pyinstaller>=6.0

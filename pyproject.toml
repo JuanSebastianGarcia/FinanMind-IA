@@ -9,6 +9,7 @@ description = "Personal finance desktop application"
 requires-python = ">=3.11"
 dependencies = [
     "customtkinter>=5.2",
+    "pywebview>=6.0,<7",
 ]
 
 [project.scripts]
@@ -16,3 +17,16 @@ finanmind = "finanmind.main:Application.run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"finanmind" = [
+    "webui/index.html",
+    "webui/assets/css/*.css",
+    "webui/assets/js/*.js",
+    "webui/assets/js/core/*.js",
+    "webui/assets/js/format/*.js",
+    "webui/assets/js/budget/*.js",
+    "webui/assets/js/budget/dialogs/*.js",
+    "webui/assets/js/distribution/*.js",
+    "webui/assets/js/distribution/dialogs/*.js",
+]
