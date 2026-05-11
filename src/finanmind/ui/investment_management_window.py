@@ -15,6 +15,7 @@ from finanmind.ui.investment_categories_manager_dialog import InvestmentCategori
 from finanmind.ui.investment_currency_chart_block import InvestmentCurrencyChartBlock
 from finanmind.ui.investment_entry_editor_dialog import InvestmentEntryEditorDialog
 from finanmind.ui.investment_list_panel import InvestmentListPanel
+from finanmind.ui.investment_review_dialog import InvestmentReviewDialog
 from finanmind.ui.investment_summary_strip import InvestmentSummaryStrip
 
 
@@ -101,6 +102,11 @@ class InvestmentManagementWindow:
         ).pack(side="left", padx=20, pady=14)
 
     def _mount_topbar_buttons(self, bar: ctk.CTkFrame) -> None:
+        self._mount_new_entry_button(bar)
+        self._mount_ia_review_button(bar)
+        self._mount_categories_button(bar)
+
+    def _mount_new_entry_button(self, bar: ctk.CTkFrame) -> None:
         ctk.CTkButton(
             bar,
             text="Nueva inversión",
@@ -110,6 +116,21 @@ class InvestmentManagementWindow:
             text_color="#ffffff",
             height=32,
         ).pack(side="right", padx=20, pady=12)
+
+    def _mount_ia_review_button(self, bar: ctk.CTkFrame) -> None:
+        ctk.CTkButton(
+            bar,
+            text="Análisis IA",
+            command=self._open_ia_review,
+            fg_color=BudgetUiTheme.BG_MAIN,
+            text_color=BudgetUiTheme.ACCENT,
+            hover_color=BudgetUiTheme.BORDER,
+            border_color=BudgetUiTheme.ACCENT,
+            border_width=1,
+            height=32,
+        ).pack(side="right", padx=(0, 10), pady=12)
+
+    def _mount_categories_button(self, bar: ctk.CTkFrame) -> None:
         ctk.CTkButton(
             bar,
             text="Categorías",
@@ -173,6 +194,10 @@ class InvestmentManagementWindow:
         dlg = InvestmentCategoriesManagerDialog(self._toplevel(), self._service)
         dlg.show()
         self.refresh()
+
+    def _open_ia_review(self) -> None:
+        dlg = InvestmentReviewDialog(self._toplevel(), self._service)
+        dlg.show()
 
     def _open_new_entry(self) -> None:
         if not self._service.categories_snapshot():
