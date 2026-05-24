@@ -35,12 +35,32 @@ export class CardExpensesTable {
   _buildRow(row) {
     const node = DomBuilder.el("div", "exp-table__row");
     node.appendChild(DomBuilder.el("div", "exp-table__cell-date", row.occurred_on));
-    node.appendChild(DomBuilder.el("div", "exp-table__cell-desc", row.description || "—"));
+    node.appendChild(this._buildDescCell(row));
     node.appendChild(DomBuilder.el("div", "exp-table__cell-cat", row.category_caption));
-    node.appendChild(DomBuilder.el("div", "exp-table__cell-amount", CurrencyFormatter.formatCop(row.amount_cop)));
+    node.appendChild(this._buildAmountCell(row));
     node.appendChild(DomBuilder.el("div", "exp-table__cell-running", CurrencyFormatter.formatCop(row.running_total_cop)));
     node.appendChild(this._buildActions(row.expense_id));
     return node;
+  }
+
+  _buildDescCell(row) {
+    const cell = DomBuilder.el("div", "exp-table__cell-desc");
+    const desc = DomBuilder.el("span", null, row.description || "—");
+    cell.appendChild(desc);
+    return cell;
+  }
+
+  _buildAmountCell(row) {
+    const cell = DomBuilder.el("div", "exp-table__cell-amount");
+    cell.appendChild(DomBuilder.el("span", null, CurrencyFormatter.formatCop(row.amount_cop)));
+
+    const isFirst = row.installment_number === 1 && row.installments > 1;
+    if (isFirst && row.total_amount_cop > 0) {
+      const hint = DomBuilder.el("div", "exp-table__installment-hint",
+        `Total: ${CurrencyFormatter.formatCop(row.total_amount_cop)} · ${row.installments} cuotas`);
+      cell.appendChild(hint);
+    }
+    return cell;
   }
 
   _buildActions(expenseId) {

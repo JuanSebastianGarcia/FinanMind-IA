@@ -213,9 +213,9 @@ class CreditCardService:
                 cat.linked_label_id = ""
 
     def expenses_for_card(self, card_id: str) -> list[CreditCardExpense]:
-        """Return all expenses for the card sorted by month, entry_order, then date."""
+        """Return all expenses for the card sorted by date ascending, entry_order as tiebreaker."""
         bucket = [e for e in self._expenses if e.card_id == card_id]
-        return sorted(bucket, key=lambda e: (e.occurred_on[:7], e.entry_order, e.occurred_on, e.expense_id))
+        return sorted(bucket, key=lambda e: (e.occurred_on, e.entry_order, e.expense_id))
 
     def expense_by_id(self, expense_id: str) -> CreditCardExpense:
         """Return expense or raise KeyError."""

@@ -180,7 +180,7 @@ export class CardDetailView {
     if (!payload) return;
     await this._safelyMutate(
       () => this._api.addCardExpense(
-        this._context.cardId, payload.categoryId, payload.day, payload.amount,
+        this._context.cardId, payload.categoryId, payload.day, payload.totalAmountCop,
         payload.description, payload.installments, payload.notes,
       ),
       "Gasto",
@@ -195,8 +195,8 @@ export class CardDetailView {
     if (!payload) return;
     await this._safelyMutate(
       () => this._api.updateCardExpense(
-        expenseId, payload.categoryId, payload.day, payload.amount,
-        payload.description, payload.installments, payload.notes,
+        expenseId, payload.categoryId, payload.day, payload.totalAmountCop,
+        payload.description, payload.notes,
       ),
       "Gasto",
     );
@@ -265,17 +265,23 @@ export class CardDetailView {
 
   static _seedFromExpense(ex) {
     return {
-      amount: ex.amount_cop,
+      amount_cop: ex.amount_cop,
+      total_amount_cop: ex.total_amount_cop || 0,
+      amount: ex.installment_number > 1 ? (ex.total_amount_cop || ex.amount_cop) : ex.amount_cop,
       description: ex.description,
       categoryId: ex.category_id,
       day: ex.occurred_on,
       installments: ex.installments,
+      installment_number: ex.installment_number || 1,
       notes: ex.notes,
     };
   }
 
   static _emptyExpenseSeed() {
-    return { amount: 0, description: "", categoryId: "", day: "", installments: 1, notes: "" };
+    return {
+      amount_cop: 0, total_amount_cop: 0, amount: 0, description: "", categoryId: "",
+      day: "", installments: 1, installment_number: 1, notes: "",
+    };
   }
 
   static _humanError(err) {

@@ -112,15 +112,15 @@ export class ApiClient {
     return this._api.delete_card_category(categoryId);
   }
 
-  addCardExpense(cardId, categoryId, occurredOn, amount, description, installments, notes) {
+  addCardExpense(cardId, categoryId, occurredOn, totalAmountCop, description, installments, notes) {
     return this._api.add_card_expense(
-      cardId, categoryId || "", occurredOn, amount, description, installments || 1, notes || "",
+      cardId, categoryId || "", occurredOn, totalAmountCop, description, installments || 1, notes || "",
     );
   }
 
-  updateCardExpense(expenseId, categoryId, occurredOn, amount, description, installments, notes) {
+  updateCardExpense(expenseId, categoryId, occurredOn, totalAmountCop, description, notes) {
     return this._api.update_card_expense(
-      expenseId, categoryId || "", occurredOn, amount, description, installments || 1, notes || "",
+      expenseId, categoryId || "", occurredOn, totalAmountCop, description, notes || "",
     );
   }
 

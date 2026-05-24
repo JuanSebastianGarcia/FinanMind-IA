@@ -1,8 +1,9 @@
 import { AmountParser } from "../../format/amount_parser.js";
+import { CurrencyFormatter } from "../../format/currency_formatter.js";
 import { DomBuilder } from "../../core/dom_builder.js";
 
 export class ExpenseDialog {
-  /** Collects amount, description, category, date, installments and notes. */
+  /** Collects total_amount, description, category, date, installments and notes. */
   static _NO_CATEGORY = "Sin categoría";
 
   constructor(modalHost, titleText, categories, seed) {
@@ -11,13 +12,16 @@ export class ExpenseDialog {
     this._categories = Array.isArray(categories) ? categories : [];
     this._seed = seed || {};
     this._resolver = null;
-    this._amountEl = null;
+    this._totalAmountEl = null;
     this._descriptionEl = null;
     this._categoryEl = null;
     this._dayEl = null;
     this._installmentsEl = null;
     this._notesEl = null;
     this._errorEl = null;
+    this._installmentsToggle = null;
+    this._installmentsSection = null;
+    this._cuotaPreviewEl = null;
   }
 
   show() {
@@ -26,6 +30,14 @@ export class ExpenseDialog {
       this._host.open(this._build(), () => this._settle(null));
       window.queueMicrotask(() => this._focusAmount());
     });
+  }
+
+  _isChildInstallment() {
+    return (this._seed.installment_number || 1) > 1;
+  }
+
+  _isMultiInstallment() {
+    return (this._seed.installments || 1) > 1;
   }
 
   _build() {
@@ -39,10 +51,11 @@ export class ExpenseDialog {
   _buildBody() {
     const body = DomBuilder.el("div", "modal__body");
     body.appendChild(this._buildAmountField());
+    body.appendChild(this._buildInstallmentsToggle());
+    body.appendChild(this._buildInstallmentsSection());
     body.appendChild(this._buildDescriptionField());
     body.appendChild(this._buildCategoryField());
     body.appendChild(this._buildDateField());
-    body.appendChild(this._buildInstallmentsField());
     body.appendChild(this._buildNotesField());
     this._errorEl = DomBuilder.el("div", "modal__field-error", "");
     body.appendChild(this._errorEl);
@@ -51,10 +64,70 @@ export class ExpenseDialog {
 
   _buildAmountField() {
     const wrap = DomBuilder.el("div", "modal__field");
-    wrap.appendChild(DomBuilder.el("div", "modal__field-label", "Valor (COP)"));
-    this._amountEl = this._buildInput("text", ExpenseDialog._formatNumber(this._seed.amount));
-    wrap.appendChild(this._amountEl);
+    const isChild = this._isChildInstallment();
+
+    if (isChild) {
+      wrap.appendChild(DomBuilder.el("div", "modal__field-label", "Valor de la cuota (COP)"));
+      const display = DomBuilder.el("div", "modal__field-readonly", CurrencyFormatter.formatCop(this._seed.amount_cop || 0));
+      wrap.appendChild(display);
+      this._totalAmountEl = null;
+    } else {
+      const label = this._isMultiInstallment()
+        ? "Valor total de la compra (COP)"
+        : "Valor (COP)";
+      wrap.appendChild(DomBuilder.el("div", "modal__field-label", label));
+      const seedAmount = this._isMultiInstallment()
+        ? (this._seed.total_amount_cop || this._seed.amount)
+        : this._seed.amount;
+      this._totalAmountEl = this._buildInput("text", ExpenseDialog._formatNumber(seedAmount));
+      this._totalAmountEl.addEventListener("input", () => this._updateCuotaPreview());
+      wrap.appendChild(this._totalAmountEl);
+    }
     return wrap;
+  }
+
+  _buildInstallmentsToggle() {
+    const wrap = DomBuilder.el("div", "modal__field modal__field--inline");
+    const isChild = this._isChildInstallment();
+
+    const label = DomBuilder.el("label", "modal__toggle-label");
+    this._installmentsToggle = DomBuilder.el("input", null);
+    this._installmentsToggle.type = "checkbox";
+    this._installmentsToggle.className = "modal__toggle-check";
+    this._installmentsToggle.checked = this._isMultiInstallment();
+    this._installmentsToggle.disabled = isChild || this._isMultiInstallment();
+
+    this._installmentsToggle.addEventListener("change", () => this._onToggleChange());
+
+    label.appendChild(this._installmentsToggle);
+    label.appendChild(document.createTextNode(" Pago en cuotas"));
+    wrap.appendChild(label);
+
+    if (isChild) {
+      const badge = DomBuilder.el("span", "modal__cuota-badge",
+        `Cuota ${this._seed.installment_number}/${this._seed.installments}`);
+      wrap.appendChild(badge);
+    }
+    return wrap;
+  }
+
+  _buildInstallmentsSection() {
+    this._installmentsSection = DomBuilder.el("div", "modal__field");
+    this._installmentsSection.style.display = this._isMultiInstallment() && !this._isChildInstallment()
+      ? ""
+      : "none";
+
+    const seedCount = String(Math.max(parseInt(this._seed.installments || 1, 10) || 1, 2));
+    this._installmentsSection.appendChild(DomBuilder.el("div", "modal__field-label", "Número de cuotas"));
+    this._installmentsEl = this._buildInput("text", this._isMultiInstallment() ? String(this._seed.installments) : seedCount);
+    this._installmentsEl.addEventListener("input", () => this._updateCuotaPreview());
+    this._installmentsSection.appendChild(this._installmentsEl);
+
+    this._cuotaPreviewEl = DomBuilder.el("div", "modal__cuota-preview", "");
+    this._installmentsSection.appendChild(this._cuotaPreviewEl);
+
+    this._updateCuotaPreview();
+    return this._installmentsSection;
   }
 
   _buildDescriptionField() {
@@ -95,15 +168,6 @@ export class ExpenseDialog {
     return wrap;
   }
 
-  _buildInstallmentsField() {
-    const wrap = DomBuilder.el("div", "modal__field");
-    wrap.appendChild(DomBuilder.el("div", "modal__field-label", "Cuotas (1 = pago único)"));
-    const seed = String(Math.max(parseInt(this._seed.installments || 1, 10) || 1, 1));
-    this._installmentsEl = this._buildInput("text", seed);
-    wrap.appendChild(this._installmentsEl);
-    return wrap;
-  }
-
   _buildNotesField() {
     const wrap = DomBuilder.el("div", "modal__field");
     wrap.appendChild(DomBuilder.el("div", "modal__field-label", "Observaciones (opcional)"));
@@ -127,6 +191,33 @@ export class ExpenseDialog {
     return actions;
   }
 
+  _onToggleChange() {
+    const enabled = this._installmentsToggle.checked;
+    this._installmentsSection.style.display = enabled ? "" : "none";
+    if (this._totalAmountEl) {
+      const label = this._totalAmountEl.previousElementSibling;
+      if (label) label.textContent = enabled ? "Valor total de la compra (COP)" : "Valor (COP)";
+    }
+    this._updateCuotaPreview();
+  }
+
+  _updateCuotaPreview() {
+    if (!this._cuotaPreviewEl) return;
+    if (!this._installmentsToggle || !this._installmentsToggle.checked) {
+      this._cuotaPreviewEl.textContent = "";
+      return;
+    }
+    const rawAmount = this._totalAmountEl ? this._totalAmountEl.value : "0";
+    const total = AmountParser.parse(rawAmount);
+    const n = parseInt((this._installmentsEl ? this._installmentsEl.value : "1") || "1", 10) || 1;
+    if (total > 0 && n > 0) {
+      const cuota = Math.round(total / n);
+      this._cuotaPreviewEl.textContent = `Valor por cuota: ${CurrencyFormatter.formatCop(cuota)}`;
+    } else {
+      this._cuotaPreviewEl.textContent = "";
+    }
+  }
+
   _confirm() {
     try {
       this._settle(this._collectPayload());
@@ -136,21 +227,52 @@ export class ExpenseDialog {
   }
 
   _collectPayload() {
-    const amount = AmountParser.parse(this._amountEl.value);
+    if (this._isChildInstallment()) {
+      return this._collectChildPayload();
+    }
+    return this._collectMainPayload();
+  }
+
+  _collectMainPayload() {
     const description = this._descriptionEl.value.trim();
     if (description === "") throw new Error("La descripción es obligatoria.");
     const day = (this._dayEl.value || "").trim();
     if (day === "") throw new Error("Selecciona una fecha.");
-    return this._composePayload(amount, description, day);
-  }
 
-  _composePayload(amount, description, day) {
+    const isInstallments = this._installmentsToggle && this._installmentsToggle.checked;
+
+    let totalAmount, installments;
+    if (isInstallments) {
+      totalAmount = AmountParser.parse(this._totalAmountEl ? this._totalAmountEl.value : "0");
+      installments = ExpenseDialog._parseInstallments(this._installmentsEl ? this._installmentsEl.value : "1");
+      if (installments < 2) throw new Error("Las cuotas deben ser al menos 2.");
+    } else {
+      totalAmount = AmountParser.parse(this._totalAmountEl ? this._totalAmountEl.value : "0");
+      installments = 1;
+    }
+
     return {
-      amount,
+      totalAmountCop: totalAmount,
       description,
       categoryId: this._categoryEl.value || "",
       day,
-      installments: ExpenseDialog._parseInstallments(this._installmentsEl.value),
+      installments,
+      notes: (this._notesEl.value || "").trim(),
+    };
+  }
+
+  _collectChildPayload() {
+    const description = this._descriptionEl.value.trim();
+    if (description === "") throw new Error("La descripción es obligatoria.");
+    const day = (this._dayEl.value || "").trim();
+    if (day === "") throw new Error("Selecciona una fecha.");
+
+    return {
+      totalAmountCop: this._seed.amount_cop || 0,
+      description,
+      categoryId: this._categoryEl.value || "",
+      day,
+      installments: this._seed.installments || 1,
       notes: (this._notesEl.value || "").trim(),
     };
   }
@@ -163,9 +285,11 @@ export class ExpenseDialog {
   }
 
   _focusAmount() {
-    if (this._amountEl) {
-      this._amountEl.focus();
-      this._amountEl.select();
+    if (this._totalAmountEl) {
+      this._totalAmountEl.focus();
+      this._totalAmountEl.select();
+    } else if (this._descriptionEl) {
+      this._descriptionEl.focus();
     }
   }
 

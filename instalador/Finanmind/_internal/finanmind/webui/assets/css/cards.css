@@ -302,7 +302,8 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: auto;
-  flex: 1;
+  max-height: 340px;
+  flex-shrink: 0;
 }
 
 .detail__card-static {
@@ -619,4 +620,60 @@
 
 .modal__field-row > .modal__field {
   flex: 1;
+}
+
+/* Installment expense hint below amount cell */
+.exp-table__installment-hint {
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+/* Inline toggle field (checkbox + label) */
+.modal__field--inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal__toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--txt-pri);
+  cursor: pointer;
+  user-select: none;
+}
+
+.modal__toggle-check {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* Cuota badge shown on child installment dialogs */
+.modal__cuota-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--info-bg);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+/* Per-cuota preview text below the installments count field */
+.modal__cuota-preview {
+  font-size: 11px;
+  color: var(--txt-sec);
+  margin-top: 4px;
+}
+
+/* Read-only amount display for child installments */
+.modal__field-readonly {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt-pri);
+  padding: 6px 0 2px;
 }
