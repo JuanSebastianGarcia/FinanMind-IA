@@ -27,6 +27,10 @@ class CreditCardCsvCodec:
         "day_a",
         "day_b",
         "installments",
+        "total_amount_cop",
+        "installment_number",
+        "parent_expense_id",
+        "entry_order",
     ]
     ROW_CARD = "card"
     ROW_CATEGORY = "category"
@@ -71,6 +75,10 @@ class CreditCardCsvCodec:
             str(int(card.cut_day)),
             str(int(card.payment_due_day)),
             "",
+            "",
+            "",
+            "",
+            "",
         ]
 
     @classmethod
@@ -90,6 +98,10 @@ class CreditCardCsvCodec:
             cat.title,
             cat.linked_label_id,
             cat.color,
+            "",
+            "",
+            "",
+            "",
             "",
             "",
             "",
@@ -115,6 +127,10 @@ class CreditCardCsvCodec:
             "",
             "",
             str(int(ex.installments)),
+            cls._amount_cell(ex.total_amount_cop),
+            str(int(ex.installment_number)),
+            ex.parent_expense_id,
+            str(int(ex.entry_order)),
         ]
 
     @classmethod
@@ -133,6 +149,10 @@ class CreditCardCsvCodec:
             cls._amount_cell(pay.amount_cop),
             "",
             pay.notes,
+            "",
+            "",
+            "",
+            "",
             "",
             "",
             "",
@@ -201,6 +221,10 @@ class CreditCardCsvCodec:
             description=cls._cell(row, 6),
             installments=cls._parse_int(cls._cell(row, 11), default=1),
             notes=cls._cell(row, 7),
+            total_amount_cop=cls._parse_amount(cls._cell(row, 12)),
+            installment_number=cls._parse_int(cls._cell(row, 13), default=1),
+            parent_expense_id=cls._cell(row, 14),
+            entry_order=cls._parse_int(cls._cell(row, 15), default=1),
         )
 
     @classmethod

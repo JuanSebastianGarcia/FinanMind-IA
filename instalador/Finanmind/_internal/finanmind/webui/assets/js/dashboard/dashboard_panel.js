@@ -1,8 +1,6 @@
 import { CurrencyFormatter } from "../format/currency_formatter.js";
 import { DashboardDonutBlock } from "./dashboard_donut_block.js";
-import { DashboardFlowChart } from "./dashboard_flow_chart.js";
 import { DashboardHealthStrip } from "./dashboard_health_strip.js";
-import { DashboardInsightsPanel } from "./dashboard_insights_panel.js";
 import { DashboardLinkedPanel } from "./dashboard_linked_panel.js";
 import { DashboardMonthToolbar } from "./dashboard_month_toolbar.js";
 import { DashboardSummaryGrid } from "./dashboard_summary_grid.js";
@@ -10,7 +8,7 @@ import { DashboardTitleBar } from "./dashboard_title_bar.js";
 import { DomBuilder } from "../core/dom_builder.js";
 
 export class DashboardPanel {
-  /** Top-level Dashboard panel: KPIs, donuts, linked block, flow, insights, health. */
+  /** Top-level Dashboard panel: KPIs, donuts, linked block and health strip. */
   constructor(host, api, modal, toast) {
     this._host = host;
     this._api = api;
@@ -56,8 +54,6 @@ export class DashboardPanel {
     scroll.appendChild(new DashboardSummaryGrid(this._state.summary).build());
     scroll.appendChild(this._buildDonutRow());
     scroll.appendChild(new DashboardLinkedPanel(this._state.linked_pair_series, this._state.month_key).build());
-    scroll.appendChild(new DashboardFlowChart(this._state.flow_points).build());
-    scroll.appendChild(new DashboardInsightsPanel(this._state.insights).build());
     scroll.appendChild(new DashboardHealthStrip(this._state.health_rows).build());
     return scroll;
   }

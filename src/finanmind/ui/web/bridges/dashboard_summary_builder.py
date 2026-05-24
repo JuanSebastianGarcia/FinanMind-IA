@@ -19,6 +19,8 @@ class DashboardSummaryBuilder:
             "card_usage_pct": cls._usage_pct(snap.card_debt_total_cop, snap.card_limit_total_cop),
             "investment_cop": snap.investment_cop,
             "investment_usd": snap.investment_usd,
+            "investment_month_cop": snap.investment_month_cop,
+            "investment_month_usd": snap.investment_month_usd,
             "savings_hint_cop": snap.savings_hint_cop,
         }
 

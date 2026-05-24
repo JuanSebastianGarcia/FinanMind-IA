@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import uuid
 
 from finanmind.models.credit_card import CreditCard
@@ -212,9 +213,9 @@ class CreditCardService:
                 cat.linked_label_id = ""
 
     def expenses_for_card(self, card_id: str) -> list[CreditCardExpense]:
-        """Return all expenses for the card, sorted by date asc, id asc."""
+        """Return all expenses for the card sorted by month, entry_order, then date."""
         bucket = [e for e in self._expenses if e.card_id == card_id]
-        return sorted(bucket, key=lambda e: (e.occurred_on, e.expense_id))
+        return sorted(bucket, key=lambda e: (e.occurred_on[:7], e.entry_order, e.occurred_on, e.expense_id))
 
     def expense_by_id(self, expense_id: str) -> CreditCardExpense:
         """Return expense or raise KeyError."""
@@ -228,54 +229,111 @@ class CreditCardService:
         card_id: str,
         category_id: str,
         occurred_on: str,
-        amount_cop: float,
+        total_amount_cop: float,
         description: str,
         installments: int,
         notes: str,
     ) -> CreditCardExpense:
-        """Append a new charge after validating fields."""
+        """Append one or more charges.
+
+        For ``installments > 1`` the purchase is spread across consecutive months:
+        the first record keeps the original date and description; subsequent records
+        are placed one month apart and labelled "Cuota X/N de <description>".
+        """
         self.card_by_id(card_id)
-        self._validate_expense_inputs(amount_cop, occurred_on, installments)
-        ex = CreditCardExpense(
+        self._validate_expense_inputs(total_amount_cop, occurred_on, installments)
+
+        n = int(installments)
+        cuota = round(total_amount_cop / n) if n > 1 else total_amount_cop
+        clean_cat = category_id.strip()
+        clean_desc = description.strip()
+        clean_notes = notes.strip()
+        clean_date = occurred_on.strip()
+
+        first_order = self._next_entry_order(card_id, clean_date[:7])
+        first = CreditCardExpense(
             expense_id=str(uuid.uuid4()),
             card_id=card_id,
-            category_id=category_id.strip(),
-            occurred_on=occurred_on.strip(),
-            amount_cop=amount_cop,
-            description=description.strip(),
-            installments=int(installments),
-            notes=notes.strip(),
+            category_id=clean_cat,
+            occurred_on=clean_date,
+            amount_cop=cuota,
+            description=clean_desc,
+            installments=n,
+            notes=clean_notes,
+            total_amount_cop=total_amount_cop if n > 1 else 0.0,
+            installment_number=1,
+            parent_expense_id="",
+            entry_order=first_order,
         )
-        self._expenses.append(ex)
+        self._expenses.append(first)
+
+        for i in range(2, n + 1):
+            future_date = self._advance_months(clean_date, i - 1)
+            child = CreditCardExpense(
+                expense_id=str(uuid.uuid4()),
+                card_id=card_id,
+                category_id=clean_cat,
+                occurred_on=future_date,
+                amount_cop=cuota,
+                description=f"Cuota {i}/{n} de {clean_desc}",
+                installments=n,
+                notes=clean_notes,
+                total_amount_cop=total_amount_cop,
+                installment_number=i,
+                parent_expense_id=first.expense_id,
+                entry_order=self._next_entry_order(card_id, future_date[:7]),
+            )
+            self._expenses.append(child)
+
         self.persist()
-        return ex
+        return first
 
     def update_expense(
         self,
         expense_id: str,
         category_id: str,
         occurred_on: str,
-        amount_cop: float,
+        total_amount_cop: float,
         description: str,
-        installments: int,
         notes: str,
     ) -> CreditCardExpense:
-        """Mutate an expense in place."""
+        """Mutate an expense in place.
+
+        For child installments (installment_number > 1) the amount is locked;
+        only category, date, description and notes are updated.
+        """
         ex = self.expense_by_id(expense_id)
-        self._validate_expense_inputs(amount_cop, occurred_on, installments)
+        self._require_iso_day(occurred_on.strip())
+        self._assert_positive(total_amount_cop)
+
         ex.category_id = category_id.strip()
         ex.occurred_on = occurred_on.strip()
-        ex.amount_cop = amount_cop
         ex.description = description.strip()
-        ex.installments = int(installments)
         ex.notes = notes.strip()
+
+        if ex.installment_number == 1:
+            n = ex.installments
+            ex.amount_cop = round(total_amount_cop / n) if n > 1 else total_amount_cop
+            if n > 1:
+                ex.total_amount_cop = total_amount_cop
+
         self.persist()
         return ex
 
     def delete_expense(self, expense_id: str) -> None:
-        """Remove a single expense."""
+        """Remove an expense.
+
+        If the target is the first installment of a multi-installment series,
+        all child installments are also removed.
+        """
+        target = self.expense_by_id(expense_id)
+        to_remove = {expense_id}
+        if target.installment_number == 1 and target.installments > 1:
+            for ex in self._expenses:
+                if ex.parent_expense_id == expense_id:
+                    to_remove.add(ex.expense_id)
         before = len(self._expenses)
-        self._expenses = [e for e in self._expenses if e.expense_id != expense_id]
+        self._expenses = [e for e in self._expenses if e.expense_id not in to_remove]
         if len(self._expenses) == before:
             raise KeyError("Gasto no encontrado")
         self.persist()
@@ -334,6 +392,27 @@ class CreditCardService:
             if len(ex.occurred_on) >= 7:
                 tokens.add(ex.occurred_on[:7])
         return sorted(tokens, reverse=True)
+
+    def _next_entry_order(self, card_id: str, month_prefix: str) -> int:
+        """Return the next sequential order number for expenses within a given month."""
+        orders = [
+            e.entry_order
+            for e in self._expenses
+            if e.card_id == card_id and e.occurred_on[:7] == month_prefix
+        ]
+        return max(orders, default=0) + 1
+
+    @staticmethod
+    def _advance_months(date_iso: str, months: int) -> str:
+        """Return an ISO date string advanced by the given number of months."""
+        year = int(date_iso[:4])
+        month = int(date_iso[5:7])
+        day = int(date_iso[8:10])
+        total = (year * 12 + month - 1) + months
+        new_year = total // 12
+        new_month = (total % 12) + 1
+        new_day = min(day, calendar.monthrange(new_year, new_month)[1])
+        return f"{new_year:04d}-{new_month:02d}-{new_day:02d}"
 
     def _validate_expense_inputs(self, amount_cop: float, day: str, installments: int) -> None:
         self._assert_positive(amount_cop)

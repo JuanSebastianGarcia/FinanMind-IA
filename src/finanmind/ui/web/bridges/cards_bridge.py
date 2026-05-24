@@ -78,14 +78,14 @@ class CardsBridge:
         card_id: str,
         category_id: str,
         occurred_on: str,
-        amount: float,
+        total_amount_cop: float,
         description: str,
         installments: int,
         notes: str,
     ) -> None:
-        """Append a new charge for one card."""
+        """Append a new charge for one card. For installments > 1 creates sibling records."""
         self._cards.add_expense(
-            card_id, category_id or "", occurred_on, float(amount), description, int(installments), notes or "",
+            card_id, category_id or "", occurred_on, float(total_amount_cop), description, int(installments), notes or "",
         )
 
     def update_expense(
@@ -93,14 +93,13 @@ class CardsBridge:
         expense_id: str,
         category_id: str,
         occurred_on: str,
-        amount: float,
+        total_amount_cop: float,
         description: str,
-        installments: int,
         notes: str,
     ) -> None:
         """Mutate an existing charge in place."""
         self._cards.update_expense(
-            expense_id, category_id or "", occurred_on, float(amount), description, int(installments), notes or "",
+            expense_id, category_id or "", occurred_on, float(total_amount_cop), description, notes or "",
         )
 
     def delete_expense(self, expense_id: str) -> None:

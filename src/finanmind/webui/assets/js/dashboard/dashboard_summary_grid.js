@@ -3,7 +3,7 @@ import { DomBuilder } from "../core/dom_builder.js";
 import { UsdFormatter } from "../format/usd_formatter.js";
 
 export class DashboardSummaryGrid {
-  /** Five KPI cards: ingresos, saldo, deuda TC, inversión, superávit. */
+  /** Five KPI cards: ingresos, saldo, deuda TC, inversión COP, inversión USD. */
   constructor(summary) {
     this._summary = summary || {};
   }
@@ -13,8 +13,8 @@ export class DashboardSummaryGrid {
     grid.appendChild(this._incomeCard());
     grid.appendChild(this._cashCard());
     grid.appendChild(this._debtCard());
-    grid.appendChild(this._investmentCard());
-    grid.appendChild(this._savingsCard());
+    grid.appendChild(this._investmentCopCard());
+    grid.appendChild(this._investmentUsdCard());
     return grid;
   }
 
@@ -43,19 +43,27 @@ export class DashboardSummaryGrid {
     );
   }
 
-  _investmentCard() {
+  _investmentCopCard() {
+    const monthCop = Number(this._summary.investment_month_cop) || 0;
+    const subtitle = monthCop > 0
+      ? `+${CurrencyFormatter.formatCop(monthCop)} este mes`
+      : "Sin movimientos este mes";
     return this._card(
-      "Inversión",
+      "Inversión COP",
       CurrencyFormatter.formatCop(this._summary.investment_cop),
-      UsdFormatter.formatUsd(this._summary.investment_usd),
+      subtitle,
     );
   }
 
-  _savingsCard() {
+  _investmentUsdCard() {
+    const monthUsd = Number(this._summary.investment_month_usd) || 0;
+    const subtitle = monthUsd > 0
+      ? `+${UsdFormatter.formatUsd(monthUsd)} este mes`
+      : "Sin movimientos este mes";
     return this._card(
-      "Superávit estimado",
-      CurrencyFormatter.formatCop(this._summary.savings_hint_cop),
-      "Ingresos − asignaciones − TC",
+      "Inversión USD",
+      UsdFormatter.formatUsd(this._summary.investment_usd),
+      subtitle,
     );
   }
 

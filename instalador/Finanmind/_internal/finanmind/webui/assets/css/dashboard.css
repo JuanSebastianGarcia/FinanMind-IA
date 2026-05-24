@@ -1,4 +1,4 @@
-/* Dashboard panel styling: scroll container, KPIs, charts, insights, health. */
+/* Dashboard panel styling: scroll container, KPIs, charts and health strip. */
 .dash {
   display: flex;
   flex-direction: column;
@@ -171,7 +171,7 @@
   gap: 8px;
   overflow-x: auto;
   padding: 4px 0 6px;
-  min-height: 124px;
+  min-height: 132px;
 }
 
 .dash-linked__kpi-empty {
@@ -183,94 +183,67 @@
 .dash-linked__tile {
   flex: 0 0 auto;
   width: 220px;
-  height: 110px;
+  min-height: 120px;
   background: var(--bg-main);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .dash-linked__tile-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--txt-pri);
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .dash-linked__tile-card {
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .dash-linked__tile-real {
   font-size: 12px;
+  line-height: 1.25;
   color: var(--txt-pri);
   margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .dash-linked__tile-budget {
   font-size: 12px;
+  line-height: 1.25;
   color: var(--txt-sec);
+  flex-shrink: 0;
 }
 
 .dash-linked__tile-delta {
   font-size: 11px;
+  line-height: 1.25;
   font-weight: 700;
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .dash-linked__chart {
-  width: 100%;
-  height: 260px;
   display: block;
-}
-
-/* Flow chart */
-.dash-flow__svg {
   width: 100%;
-  height: 240px;
-  display: block;
-}
-
-.dash-flow__hint {
-  font-size: 11px;
-  color: var(--txt-ter);
-}
-
-/* Insights */
-.dash-insights {
-  background: var(--info-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.dash-insights__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--txt-pri);
-  margin-bottom: 2px;
-}
-
-.dash-insights__line {
-  font-size: 12px;
-  color: var(--txt-pri);
-}
-
-.dash-insights__empty {
-  font-size: 12px;
-  color: var(--txt-sec);
+  max-width: 100%;
+  height: auto;
+  max-height: 220px;
+  margin: 0 auto;
 }
 
 /* Health */

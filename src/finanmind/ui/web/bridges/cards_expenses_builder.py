@@ -38,6 +38,9 @@ class CardsExpensesBuilder:
             "category_caption": cls._caption(ex.category_id, captions),
             "amount_cop": ex.amount_cop,
             "installments": ex.installments,
+            "installment_number": ex.installment_number,
+            "total_amount_cop": ex.total_amount_cop,
+            "parent_expense_id": ex.parent_expense_id,
             "notes": ex.notes,
             "running_total_cop": running_total,
         }

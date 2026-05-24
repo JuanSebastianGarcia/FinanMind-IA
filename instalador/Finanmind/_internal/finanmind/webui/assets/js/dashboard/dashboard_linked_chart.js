@@ -14,8 +14,7 @@ export class DashboardLinkedChart {
   build() {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("class", "dash-linked__chart");
-    svg.setAttribute("viewBox", "0 0 600 260");
-    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("viewBox", "0 0 900 220");
     if (this._series.length === 0) this._paintEmpty(svg);
     else this._paintChart(svg);
     return svg;
@@ -23,8 +22,8 @@ export class DashboardLinkedChart {
 
   _paintEmpty(svg) {
     const text = document.createElementNS(SVG_NS, "text");
-    text.setAttribute("x", "300");
-    text.setAttribute("y", "130");
+    text.setAttribute("x", "450");
+    text.setAttribute("y", "110");
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("fill", "#9ca3af");
     text.setAttribute("font-size", "12");
@@ -37,7 +36,7 @@ export class DashboardLinkedChart {
     const focus = this._focusSeries();
     const targets = focus ? [focus] : this._series;
     const peak = this._peak(targets, months);
-    const box = { x0: 64, y0: 26, x1: 600 - 18, y1: 260 - 30 };
+    const box = { x0: 60, y0: 24, x1: 900 - 18, y1: 220 - 28 };
     this._paintAxes(svg, box, peak, months);
     if (focus) this._paintSingle(svg, box, focus, months, peak);
     else this._paintMulti(svg, box, months, peak);

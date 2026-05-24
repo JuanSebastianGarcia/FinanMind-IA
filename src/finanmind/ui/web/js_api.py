@@ -201,14 +201,14 @@ class JsApi:
         card_id: str,
         category_id: str,
         occurred_on: str,
-        amount: float,
+        total_amount_cop: float,
         description: str,
         installments: int = 1,
         notes: str = "",
     ) -> None:
-        """Append a new charge under a card."""
+        """Append a new charge under a card. For installments > 1 sibling records are created."""
         self._cards.add_expense(
-            card_id, category_id, occurred_on, amount, description, installments, notes,
+            card_id, category_id, occurred_on, total_amount_cop, description, installments, notes,
         )
 
     def update_card_expense(
@@ -216,14 +216,13 @@ class JsApi:
         expense_id: str,
         category_id: str,
         occurred_on: str,
-        amount: float,
+        total_amount_cop: float,
         description: str,
-        installments: int = 1,
         notes: str = "",
     ) -> None:
         """Edit an existing charge in place."""
         self._cards.update_expense(
-            expense_id, category_id, occurred_on, amount, description, installments, notes,
+            expense_id, category_id, occurred_on, total_amount_cop, description, notes,
         )
 
     def delete_card_expense(self, expense_id: str) -> None:
