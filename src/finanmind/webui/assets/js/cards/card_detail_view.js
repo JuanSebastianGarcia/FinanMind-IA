@@ -59,10 +59,7 @@ export class CardDetailView {
 
   _buildLeftColumn() {
     const left = DomBuilder.el("div", "detail__column");
-    left.appendChild(DomBuilder.el("div", "detail__section-title", "Movimientos del ciclo"));
     left.appendChild(new CardExpensesTable(this._state.expenses, this._expensesHandlers()).build());
-    left.appendChild(DomBuilder.el("div", "detail__section-title", "Distribución por categoría"));
-    left.appendChild(new CardChart(this._state.chart).build());
     return left;
   }
 
@@ -72,6 +69,8 @@ export class CardDetailView {
     right.appendChild(new CardCategoriesPanel(this._state.categories, this._categoryHandlers()).build());
     right.appendChild(DomBuilder.el("div", "detail__section-title", "Pagos registrados"));
     right.appendChild(new CardPaymentsPanel(this._state.payments, this._paymentHandlers()).build());
+    right.appendChild(DomBuilder.el("div", "detail__section-title", "Distribución por categoría"));
+    right.appendChild(new CardChart(this._state.chart).build());
     return right;
   }
 
