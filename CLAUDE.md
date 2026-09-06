@@ -80,7 +80,11 @@ Seven bridge classes under `ui/web/bridges/` connect Python services to JavaScri
 - `BudgetReviewBridge` — AI budget analysis
 - `InvestmentReviewBridge` — AI investment analysis
 
-Each bridge has corresponding `*_builder.py` payload builders that serialize domain models to dicts for JSON transfer.
+Each bridge is split into many single-purpose companion files (not just one): `*_builder.py` (serialize domain models to dicts for JSON transfer), `*_resolver.py`, and `*_serializer.py`. `ui/web/bridges/` has ~47 files total for the 7 bridge classes — e.g. `cards_bridge.py` alone has 8+ companions (`cards_categories_builder.py`, `cards_chart_builder.py`, `cards_cycles_resolver.py`, `cards_expenses_builder.py`, etc).
+
+### Budget Module Extras
+
+`src/finanmind/budget/` also holds `book_service.py`, `csv_codec.py`, `palette.py`, and `salary_shares.py` alongside `repository.py` — supporting logic for the budget domain beyond plain CSV persistence.
 
 ### Repository Pattern
 

@@ -20,6 +20,8 @@ instalador/build/
 instalador/dist/
 instalador/*.spec
 instalador/*.exe
+instalador/Finanmind/
+instalador/Finanmind.zip
 
 # IDE / OS
 .idea/
