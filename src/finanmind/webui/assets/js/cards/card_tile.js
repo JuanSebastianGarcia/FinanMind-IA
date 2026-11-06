@@ -3,10 +3,11 @@ import { DomBuilder } from "../core/dom_builder.js";
 import { PercentFormatter } from "../format/percent_formatter.js";
 
 export class CardTile {
-  /** Renders a single dashboard tile with debt/available/usage bar and Abrir button. */
-  constructor(tile, onOpen) {
+  /** Renders a single dashboard tile with debt/available/usage bar and action buttons. */
+  constructor(tile, onOpen, onAutomate) {
     this._tile = tile;
     this._onOpen = onOpen;
+    this._onAutomate = onAutomate;
   }
 
   build() {
@@ -62,6 +63,9 @@ export class CardTile {
 
   _buildAction() {
     const wrap = DomBuilder.el("div", "tile__action");
+    wrap.appendChild(
+      DomBuilder.button("btn btn--outline", "Automatizar procesamiento", () => this._onAutomate(this._tile.card_id)),
+    );
     wrap.appendChild(DomBuilder.button("btn btn--primary", "Abrir tarjeta", () => this._onOpen(this._tile.card_id)));
     return wrap;
   }

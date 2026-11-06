@@ -323,14 +323,16 @@ class CreditCardService:
     def delete_expense(self, expense_id: str) -> None:
         """Remove an expense.
 
-        If the target is the first installment of a multi-installment series,
-        all child installments are also removed.
+        Deleting any single installment of a multi-installment purchase removes the
+        whole purchase — every sibling installment across all its months — not just
+        the one selected, since they all represent the same original charge.
         """
         target = self.expense_by_id(expense_id)
-        to_remove = {expense_id}
-        if target.installment_number == 1 and target.installments > 1:
+        anchor_id = target.expense_id if target.installment_number == 1 else target.parent_expense_id
+        to_remove = {expense_id, anchor_id}
+        if target.installments > 1:
             for ex in self._expenses:
-                if ex.parent_expense_id == expense_id:
+                if ex.expense_id == anchor_id or ex.parent_expense_id == anchor_id:
                     to_remove.add(ex.expense_id)
         before = len(self._expenses)
         self._expenses = [e for e in self._expenses if e.expense_id not in to_remove]

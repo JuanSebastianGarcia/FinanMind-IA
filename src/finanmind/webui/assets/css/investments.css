@@ -579,3 +579,22 @@
   color: var(--txt-ter);
   margin-top: 2px;
 }
+
+.invest-ia__engine-select,
+.invest-ia__model-input {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-main);
+  color: var(--txt-pri);
+  font-size: 12px;
+}
+
+.invest-ia__model-input {
+  width: 200px;
+}
+
+.invest-ia__row[hidden] {
+  display: none;
+}

@@ -25,6 +25,12 @@ export class CardDetailTopbar {
     actions.appendChild(DomBuilder.button("btn btn--outline", "Editar tarjeta", () => this._handlers.onEdit()));
     actions.appendChild(DomBuilder.button("btn btn--outline", "Registrar pago", () => this._handlers.onNewPayment()));
     actions.appendChild(DomBuilder.button("btn btn--primary", "Nuevo gasto", () => this._handlers.onNewExpense()));
+    actions.appendChild(
+      DomBuilder.button("btn btn--outline", "Registrar gastos automático", () => this._handlers.onScanStatements()),
+    );
+    actions.appendChild(
+      DomBuilder.button("btn btn--danger", "Borrar gastos duplicados", () => this._handlers.onRemoveDuplicates()),
+    );
     return actions;
   }
 }

@@ -136,6 +136,42 @@ export class ApiClient {
     return this._api.delete_card_payment(paymentId);
   }
 
+  getCardAutomationState(cardId) {
+    return this._api.get_card_automation_state(cardId);
+  }
+
+  saveCardAutomation(cardId, email, appPassword) {
+    return this._api.save_card_automation(cardId, email, appPassword);
+  }
+
+  clearCardAutomation(cardId) {
+    return this._api.clear_card_automation(cardId);
+  }
+
+  scanCardStatementEmails(cardId) {
+    return this._api.scan_card_statement_emails(cardId);
+  }
+
+  extractCardStatementExpenses(cardId, messageIds, pdfPassword) {
+    return this._api.extract_card_statement_expenses(cardId, messageIds, pdfPassword || "");
+  }
+
+  getCardCategoriesList(cardId) {
+    return this._api.get_card_categories(cardId);
+  }
+
+  classifyExtractedExpense(cardId, row) {
+    return this._api.classify_extracted_expense(cardId, row);
+  }
+
+  registerExtractedExpense(cardId, row, categoryId, remember, descriptionOverride) {
+    return this._api.register_extracted_expense(cardId, row, categoryId || "", !!remember, descriptionOverride || "");
+  }
+
+  removeCardDuplicateExpenses(cardId) {
+    return this._api.remove_card_duplicate_expenses(cardId);
+  }
+
   getInvestmentsState() {
     return this._api.get_investments_state();
   }
@@ -170,6 +206,10 @@ export class ApiClient {
 
   getInvestmentReviewSetup() {
     return this._api.get_investment_review_setup();
+  }
+
+  setInvestmentReviewEngine(engine, modelId) {
+    return this._api.set_investment_review_engine(engine || "", modelId || "");
   }
 
   addInvestmentReviewRule(text) {
@@ -214,5 +254,21 @@ export class ApiClient {
 
   saveBudgetReviewLlmSettings(provider, apiKey, modelId) {
     return this._api.save_budget_review_llm_settings(provider || "", apiKey || "", modelId || "");
+  }
+
+  getTelegramSyncStatus() {
+    return this._api.get_telegram_sync_status();
+  }
+
+  assignTelegramCardTermination(last4, cardId) {
+    return this._api.assign_telegram_card_termination(last4, cardId || "");
+  }
+
+  resolveTelegramPurchase(purchaseId) {
+    return this._api.resolve_telegram_purchase(purchaseId);
+  }
+
+  syncTelegramNow() {
+    return this._api.sync_telegram_now();
   }
 }

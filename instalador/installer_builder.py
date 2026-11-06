@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from pyinstaller_missing_modules import PyInstallerMissingModules
 from python_interpreter_picker import PythonInterpreterPicker
 
 
@@ -14,22 +15,25 @@ class InstallerBuilder:
     """Packages Finanmind into a standalone build inside the instalador folder."""
 
     APP_NAME = "Finanmind"
+    APP_PACKAGE = "finanmind"
 
     def __init__(self) -> None:
         self._instalador_dir = Path(__file__).resolve().parent
         self._project_root = self._instalador_dir.parent
         self._entry_script = self._project_root / "main.py"
+        self._requirements_file = self._project_root / "requirements.txt"
         self._src_dir = self._project_root / "src"
-        self._webui_dir = self._src_dir / "finanmind" / "webui"
+        self._webui_dir = self._src_dir / self.APP_PACKAGE / "webui"
         self._icon_file = self._webui_dir / "assets" / "icons" / "finanmind.ico"
 
     def build(self) -> Path:
         """Run PyInstaller and place the resulting bundle next to this script."""
         self._maybe_reexec_with_compatible_python()
-        self._ensure_dependencies()
+        self._install_requirements()
         self._ensure_webui_present()
         self._clean_previous_artifacts()
         self._run_pyinstaller()
+        self._ensure_no_missing_app_imports()
         return self._publish_build()
 
     def _maybe_reexec_with_compatible_python(self) -> None:
@@ -37,8 +41,16 @@ class InstallerBuilder:
             return
         compatible = PythonInterpreterPicker.find_compatible_python()
         if compatible is None:
-            return
+            raise RuntimeError(self._unsupported_python_message())
         self._reexec_with(compatible)
+
+    def _unsupported_python_message(self) -> str:
+        major, minor = sys.version_info[:2]
+        return (
+            f"Python {major}.{minor} is unsupported by pywebview "
+            f"(pythonnet ships no wheels for it). "
+            f"Install Python 3.11-3.13 and the 'py' launcher will be used automatically."
+        )
 
     def _reexec_with(self, python_exe: Path) -> None:
         current = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -50,29 +62,36 @@ class InstallerBuilder:
         result = subprocess.run([str(python_exe), str(Path(__file__).resolve())], check=False)
         sys.exit(result.returncode)
 
-    def _ensure_dependencies(self) -> None:
-        self._require_module("PyInstaller", self._install_hint())
-        self._require_module("webview", self._pywebview_hint())
-
-    def _pywebview_hint(self) -> str:
-        major, minor = sys.version_info[:2]
-        if (major, minor) >= (3, 14):
-            return (
-                f"Python {major}.{minor} is unsupported by pywebview "
-                f"(pythonnet ships no wheels for it). "
-                f"Install Python 3.11-3.13 and the 'py' launcher will be used automatically."
+    def _install_requirements(self) -> None:
+        print(f"[installer] Installing requirements into: {sys.executable}", flush=True)
+        result = subprocess.run(
+            [
+                sys.executable, "-m", "pip", "install",
+                "--disable-pip-version-check",
+                "-r", str(self._requirements_file),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"pip could not install the requirements (see output above).\n"
+                f"  {self._install_hint()}"
             )
-        return self._install_hint()
 
     def _install_hint(self) -> str:
-        requirements = self._project_root / "requirements.txt"
-        return f'Run:  "{sys.executable}" -m pip install -r "{requirements}"'
+        return f'Run:  "{sys.executable}" -m pip install -r "{self._requirements_file}"'
 
-    def _require_module(self, module_name: str, hint: str) -> None:
-        try:
-            __import__(module_name)
-        except ImportError as exc:
-            raise RuntimeError(f"Missing dependency '{module_name}'.\n  {hint}") from exc
+    def _ensure_no_missing_app_imports(self) -> None:
+        warn_file = self._instalador_dir / "build" / self.APP_NAME / f"warn-{self.APP_NAME}.txt"
+        missing = PyInstallerMissingModules(warn_file).required_by(self.APP_PACKAGE)
+        if not missing:
+            return
+        details = "\n".join(f"    - {entry}" for entry in missing)
+        raise RuntimeError(
+            f"The build is missing modules that {self.APP_PACKAGE} imports; "
+            f"the .exe would crash on startup:\n{details}\n"
+            f"  Add the packages to requirements.txt and build again."
+        )
 
     def _ensure_webui_present(self) -> None:
         index_html = self._webui_dir / "index.html"

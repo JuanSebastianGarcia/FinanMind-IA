@@ -19,13 +19,27 @@ class CardsExpensesBuilder:
         card_id: str,
         cycle_expenses: list[CreditCardExpense],
     ) -> list[dict]:
-        """Return one row per expense including a precomputed running total."""
+        """Return one row per expense including a precomputed running total.
+
+        Direct (single-installment) expenses accumulate their own amount, same as
+        before. Installment expenses accumulate the *remaining balance* of each
+        purchase instead — installments left (including the current one) times the
+        installment amount — so the running total reflects outstanding debt rather
+        than a historical sum that would keep growing even for cuotas already paid.
+        """
         captions = cls._captions_for_card(service, card_id)
         out: list[dict] = []
-        running = 0.0
+        running_single = 0.0
+        running_installments = 0.0
         for ex in cycle_expenses:
-            running += ex.amount_cop
-            out.append(cls._row(ex, running, captions))
+            if ex.installments > 1:
+                remaining_installments = ex.installments - ex.installment_number + 1
+                running_installments += remaining_installments * ex.amount_cop
+                running_value = running_installments
+            else:
+                running_single += ex.amount_cop
+                running_value = running_single
+            out.append(cls._row(ex, running_value, captions))
         return out
 
     @classmethod

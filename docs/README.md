@@ -10,7 +10,7 @@ _(vacío por ahora — agregar notas de decisiones estructurales aquí)_
 
 ## features/
 
-_(vacío por ahora — agregar una nota por funcionalidad de negocio aquí)_
+- [investment-review-claude-cli.md](features/investment-review-claude-cli.md): análisis IA de inversiones con API key o con Claude Code (CLI)
 
 ## flows/
 

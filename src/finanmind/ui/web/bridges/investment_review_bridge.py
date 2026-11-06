@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from finanmind.models.investment_review_request import InvestmentReviewRequest
+from finanmind.services.claude_cli_model_store import ClaudeCliModelStore
+from finanmind.services.investment_ai_engine import InvestmentAiEngine
+from finanmind.services.investment_ai_engine_store import InvestmentAiEngineStore
 from finanmind.services.investment_review_llm_factory import InvestmentReviewLlmFactory
 from finanmind.services.investment_review_rules_store import (
     InvestmentReviewRulesStore,
@@ -14,6 +17,9 @@ from finanmind.services.investment_review_service_error import (
 from finanmind.services.investment_service import InvestmentService
 from finanmind.services.llm_configuration_error import LlmConfigurationError
 from finanmind.services.usd_cop_rate_store import UsdCopRateStore
+from finanmind.ui.web.bridges.investment_review_engine_builder import (
+    InvestmentReviewEngineBuilder,
+)
 from finanmind.ui.web.bridges.investment_review_result_builder import (
     InvestmentReviewResultBuilder,
 )
@@ -44,7 +50,17 @@ class InvestmentReviewBridge:
             "rate_env_locked": UsdCopRateStore.env_var_in_use(),
             "status": InvestmentReviewStatusBuilder.build(),
             "credentials_ready": self._credentials_ready(),
+            **InvestmentReviewEngineBuilder.build(),
         }
+
+    def set_engine(self, engine: str, model_id: str) -> dict:
+        """Persist the engine (API vs Claude Code CLI) and CLI model, return the setup."""
+        choice = InvestmentAiEngine.parse(engine)
+        if choice == InvestmentAiEngine.CLAUDE_CLI and not ClaudeCliModelStore.env_var_in_use():
+            ClaudeCliModelStore.persist_model(model_id or "")
+        if not InvestmentAiEngineStore.env_var_in_use():
+            InvestmentAiEngineStore.persist(choice)
+        return self.get_setup()
 
     def add_rule(self, text: str) -> list[dict]:
         """Append a new personal rule and return the refreshed rules list."""

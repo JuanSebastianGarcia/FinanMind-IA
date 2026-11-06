@@ -18,6 +18,10 @@ export class InvestmentReviewDialog {
     this._analyzeBtn = null;
     this._rulesBtn = null;
     this._resultsHost = null;
+    this._engineSelect = null;
+    this._modelInput = null;
+    this._cliRow = null;
+    this._cliHintEl = null;
   }
 
   async show() {
@@ -32,7 +36,7 @@ export class InvestmentReviewDialog {
     try {
       this._setup = await this._api.getInvestmentReviewSetup();
     } catch (err) {
-      this._setup = { rules: [], rate: 4000, rate_env_locked: false, status: { vendor: "OpenAI", model: "" }, credentials_ready: false };
+      this._setup = { rules: [], rate: 4000, rate_env_locked: false, status: { vendor: "OpenAI", model: "" }, credentials_ready: false, engine: "api", claude_cli: { detected: false, model_id: "" } };
       this._toast.error(`IA: ${InvestmentReviewDialog._humanError(err)}`);
     }
   }
@@ -70,6 +74,8 @@ export class InvestmentReviewDialog {
 
   _buildBody() {
     const body = DomBuilder.el("div", "modal__body");
+    body.appendChild(this._buildEngineRow());
+    body.appendChild(this._buildCliRow());
     body.appendChild(this._buildRulesRow());
     body.appendChild(this._buildRateRow());
     this._statusEl = DomBuilder.el("div", "invest-ia__status", "");
@@ -77,6 +83,73 @@ export class InvestmentReviewDialog {
     this._resultsHost = DomBuilder.el("div", "invest-ia__results", "");
     body.appendChild(this._resultsHost);
     return body;
+  }
+
+  _isCliEngine() {
+    return Boolean(this._setup && this._setup.engine === "claude_cli");
+  }
+
+  _cliState() {
+    return (this._setup && this._setup.claude_cli) || { detected: false, model_id: "", path: "" };
+  }
+
+  _buildEngineRow() {
+    const row = DomBuilder.el("div", "invest-ia__row");
+    row.appendChild(DomBuilder.el("div", "invest-ia__row-label", "Motor de IA:"));
+    const select = DomBuilder.el("select", "invest-ia__engine-select");
+    for (const [value, label] of [["api", "API key (OpenAI / Mistral)"], ["claude_cli", "Claude Code (CLI)"]]) {
+      const opt = DomBuilder.el("option", "", label);
+      opt.value = value;
+      select.appendChild(opt);
+    }
+    select.value = this._isCliEngine() ? "claude_cli" : "api";
+    if (this._setup && this._setup.engine_env_locked) select.disabled = true;
+    select.addEventListener("change", () => this._handleEngineChange());
+    this._engineSelect = select;
+    row.appendChild(select);
+    return row;
+  }
+
+  _buildCliRow() {
+    const row = DomBuilder.el("div", "invest-ia__row");
+    row.appendChild(DomBuilder.el("div", "invest-ia__row-label", "Modelo:"));
+    const input = DomBuilder.el("input", "invest-ia__model-input");
+    input.type = "text";
+    input.placeholder = "predeterminado (ej. sonnet, opus)";
+    input.value = this._cliState().model_id || "";
+    if (this._cliState().model_env_locked) input.disabled = true;
+    input.addEventListener("change", () => this._handleEngineChange());
+    this._modelInput = input;
+    row.appendChild(input);
+    this._cliHintEl = DomBuilder.el("div", "invest-ia__row-hint", "");
+    row.appendChild(this._cliHintEl);
+    this._cliRow = row;
+    this._syncCliRow();
+    return row;
+  }
+
+  _syncCliRow() {
+    if (!this._cliRow) return;
+    this._cliRow.hidden = !this._isCliEngine();
+    const cli = this._cliState();
+    this._cliHintEl.textContent = cli.detected
+      ? "(usa tu sesión de Claude Code, sin API key)"
+      : "(no se encontró Claude Code en este equipo)";
+  }
+
+  async _handleEngineChange() {
+    if (this._busy) return;
+    const engine = this._engineSelect.value;
+    const model = engine === "claude_cli" && this._modelInput ? this._modelInput.value.trim() : "";
+    try {
+      const fresh = await this._api.setInvestmentReviewEngine(engine, model);
+      this._setup = { ...this._setup, ...fresh };
+    } catch (err) {
+      this._toast.error(`IA: ${InvestmentReviewDialog._humanError(err)}`);
+      if (this._engineSelect) this._engineSelect.value = this._isCliEngine() ? "claude_cli" : "api";
+    }
+    this._syncCliRow();
+    this._refreshStatus();
   }
 
   _buildRulesRow() {
@@ -127,15 +200,23 @@ export class InvestmentReviewDialog {
   _refreshStatus() {
     if (!this._statusEl || !this._setup) return;
     if (this._busy) {
-      this._setStatus("Enviando portafolio a la IA…", "accent");
+      const wait = this._isCliEngine() ? " Claude Code puede tardar un par de minutos." : "";
+      this._setStatus(`Enviando portafolio a la IA…${wait}`, "accent");
       return;
     }
     if (!this._setup.credentials_ready) {
-      this._setStatus("Configura la API key en 'Configurar IA' antes de pedir un análisis.", "red");
+      this._setStatus(this._notReadyMessage(), "red");
       return;
     }
     const status = this._setup.status || {};
     this._setStatus(`Proveedor: ${status.vendor || ""} · Modelo: ${status.model || ""}`, "");
+  }
+
+  _notReadyMessage() {
+    if (this._isCliEngine()) {
+      return "No se encontró Claude Code (CLI). Instálalo o define FINANMIND_CLAUDE_CLI_PATH.";
+    }
+    return "Configura la API key en 'Configurar IA' antes de pedir un análisis.";
   }
 
   _setStatus(text, tone) {
@@ -164,7 +245,7 @@ export class InvestmentReviewDialog {
   async _handleAnalyze() {
     if (this._busy) return;
     if (!this._setup || !this._setup.credentials_ready) {
-      this._toast.error("Configura la API key del proveedor antes de pedir un análisis.");
+      this._toast.error(this._notReadyMessage());
       return;
     }
     const rate = this._readRate();
@@ -202,6 +283,8 @@ export class InvestmentReviewDialog {
 
   _setBusy(busy) {
     this._busy = busy;
+    if (this._engineSelect) this._engineSelect.disabled = busy || Boolean(this._setup && this._setup.engine_env_locked);
+    if (this._modelInput) this._modelInput.disabled = busy || Boolean(this._cliState().model_env_locked);
     if (this._analyzeBtn) {
       this._analyzeBtn.disabled = busy;
       this._analyzeBtn.textContent = busy ? "Analizando…" : "Solicitar análisis";

@@ -3,5 +3,14 @@ customtkinter>=5.2
 # Web-based UI window (HTML/CSS/JS rendered via a native chromium webview)
 pywebview>=6.0,<7
 
+# Windows DPAPI access, used to encrypt secrets (e.g. Gmail app passwords) at rest
+pywin32>=306; sys_platform == "win32"
+
+# Reads password-protected NU credit-card statement PDFs and extracts their expense table
+pdfplumber>=0.11,<1
+
+# Reads the NU purchase notifications forwarded to a Telegram chat (user session via MTProto)
+telethon>=1.36,<2
+
 # Executable packaging (used by instalador/installer_builder.py to build .exe)
 pyinstaller>=6.0

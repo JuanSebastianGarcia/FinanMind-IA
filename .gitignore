@@ -45,3 +45,18 @@ mistral_model.txt
 **/mistral_model.txt
 .env
 *.env
+
+# Telegram purchase reader: encrypted session, reading checkpoint and queued purchases
+data/telegram_*.json
+*.session
+
+# NU statements: PDF passwords, Gmail automations and imported statements
+data/nu_pdf_passwords.json
+data/gmail_card_automations.json
+data/nu_statement_imports/
+
+# Investment review engine preferences (API key vs Claude Code CLI)
+investment_ai_engine.txt
+**/investment_ai_engine.txt
+claude_cli_model.txt
+**/claude_cli_model.txt

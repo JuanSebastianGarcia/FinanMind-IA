@@ -103,6 +103,53 @@
   min-height: 14px;
 }
 
+.modal__hint {
+  font-size: 12px;
+  color: var(--txt-sec);
+  line-height: 1.4;
+}
+
+.modal__checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--txt-sec);
+  cursor: pointer;
+}
+
+.scan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.scan-table th,
+.scan-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--txt-pri);
+}
+
+.scan-table th {
+  color: var(--txt-sec);
+  font-weight: 600;
+}
+
+.scan-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.scan-pager__label {
+  font-size: 12px;
+  color: var(--txt-sec);
+}
+
 /* Palette grid for category dialog */
 .palette-grid {
   background: var(--bg-main);

@@ -149,10 +149,12 @@
 
 .tile__action {
   margin-top: 4px;
+  display: flex;
+  gap: 8px;
 }
 
 .tile__action .btn {
-  width: 100%;
+  flex: 1;
 }
 
 /* Detail view */

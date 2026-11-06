@@ -1,5 +1,6 @@
 import { DomBuilder } from "../core/dom_builder.js";
 import { CardTile } from "./card_tile.js";
+import { AutomationDialog } from "./dialogs/automation_dialog.js";
 import { CardDialog } from "./dialogs/card_dialog.js";
 
 export class CardsDashboardView {
@@ -55,7 +56,9 @@ export class CardsDashboardView {
       return grid;
     }
     for (const tile of tiles) {
-      grid.appendChild(new CardTile(tile, this._handlers.onOpenCard).build());
+      grid.appendChild(
+        new CardTile(tile, this._handlers.onOpenCard, (cardId) => this._handleAutomateProcessing(cardId)).build(),
+      );
     }
     return grid;
   }
@@ -85,6 +88,40 @@ export class CardsDashboardView {
       this._handlers.onCardCreated(info.card_id);
     } catch (err) {
       this._toast.error(`Tarjeta: ${CardsDashboardView._humanError(err)}`);
+    }
+  }
+
+  async _handleAutomateProcessing(cardId) {
+    const state = await this._safelyLoadAutomationState(cardId);
+    if (!state) return;
+    const payload = await new AutomationDialog(this._modal, state).show();
+    if (!payload) return;
+    if (payload.disconnect) {
+      await this._safelyClearAutomation(cardId);
+      return;
+    }
+    try {
+      await this._api.saveCardAutomation(cardId, payload.email, payload.appPassword);
+      this._toast.info("Cuenta de Gmail conectada correctamente.");
+    } catch (err) {
+      this._toast.error(`Automatización: ${CardsDashboardView._humanError(err)}`);
+    }
+  }
+
+  async _safelyLoadAutomationState(cardId) {
+    try {
+      return await this._api.getCardAutomationState(cardId);
+    } catch (err) {
+      this._toast.error(`Automatización: ${CardsDashboardView._humanError(err)}`);
+      return null;
+    }
+  }
+
+  async _safelyClearAutomation(cardId) {
+    try {
+      await this._api.clearCardAutomation(cardId);
+    } catch (err) {
+      this._toast.error(`Automatización: ${CardsDashboardView._humanError(err)}`);
     }
   }
 

@@ -23,6 +23,11 @@ export class PanelRouter {
     if (wasMounted) await this._refreshIfPossible(entry);
   }
 
+  async refreshActive() {
+    const entry = this._entries.get(this._activeKey);
+    if (entry && entry.mounted) await this._refreshIfPossible(entry);
+  }
+
   async _ensureMounted(entry) {
     if (entry.mounted) return;
     await entry.panel.mount();

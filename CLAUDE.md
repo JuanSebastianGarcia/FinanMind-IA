@@ -30,7 +30,7 @@ python instalador/installer_builder.py
 # Output: instalador/Finanmind/Finanmind.exe + instalador/Finanmind.zip
 ```
 
-The builder auto-detects a compatible Python version (3.11–3.13) and re-execs if needed.
+The builder auto-detects a compatible Python version (3.11–3.13) and re-execs if needed, then `pip install`s `requirements.txt` into that interpreter. After PyInstaller runs, it fails the build if `build/Finanmind/warn-Finanmind.txt` lists a non-optional `finanmind.*` import as missing (that .exe would crash on startup).
 
 ## Architecture
 
@@ -70,7 +70,7 @@ CSV Files  (data/)
 
 ### Domain Bridges
 
-Seven bridge classes under `ui/web/bridges/` connect Python services to JavaScript:
+Eight bridge classes under `ui/web/bridges/` connect Python services to JavaScript:
 
 - `BudgetBridge` — salary, categories, labels
 - `CardsBridge` — credit card CRUD, transactions, payments
@@ -79,8 +79,9 @@ Seven bridge classes under `ui/web/bridges/` connect Python services to JavaScri
 - `DashboardBridge` — aggregated financial snapshot
 - `BudgetReviewBridge` — AI budget analysis
 - `InvestmentReviewBridge` — AI investment analysis
+- `TelegramBridge` — NU purchases read from a Telegram chat (queue, card terminations)
 
-Each bridge is split into many single-purpose companion files (not just one): `*_builder.py` (serialize domain models to dicts for JSON transfer), `*_resolver.py`, and `*_serializer.py`. `ui/web/bridges/` has ~47 files total for the 7 bridge classes — e.g. `cards_bridge.py` alone has 8+ companions (`cards_categories_builder.py`, `cards_chart_builder.py`, `cards_cycles_resolver.py`, `cards_expenses_builder.py`, etc).
+Each bridge is split into many single-purpose companion files (not just one): `*_builder.py` (serialize domain models to dicts for JSON transfer), `*_resolver.py`, and `*_serializer.py`. `ui/web/bridges/` has ~47 files total for the 8 bridge classes — e.g. `cards_bridge.py` alone has 8+ companions (`cards_categories_builder.py`, `cards_chart_builder.py`, `cards_cycles_resolver.py`, `cards_expenses_builder.py`, etc).
 
 ### Budget Module Extras
 
@@ -103,13 +104,20 @@ Factories require `AppConfig.USER_DATA_ROOT` to be set first. Repositories do at
 - `LlmHttpChatClient` — generic HTTP-based chat client
 - API keys are stored as plain text in `data/` (git-ignored)
 - Investment review rules are in `data/investment_review_rules.json`
+- Investment review can instead run through the local **Claude Code CLI** (no API key): engine chosen per user in the investment review dialog (`investment_ai_engine.txt`), client `ClaudeCliChatClient`. Budget review always uses the API. See `docs/features/investment-review-claude-cli.md`
 
 ### Data / Secrets (git-ignored, live in `data/`)
 
 - `budget.csv`, `credit_cards.csv`, `investments.csv`, `monthly_distribution.csv`
 - `openai_api_key.txt`, `mistral_api_key.txt`
 - `budget_ai_provider.txt`, `mistral_model.txt`
+- `investment_ai_engine.txt` (`api` | `claude_cli`), `claude_cli_model.txt`
 - `usd_cop_rate.txt`
+- `telegram_automation.json` (DPAPI-encrypted Telegram session), `telegram_sync_state.json` (read checkpoint + queued purchases), `telegram_card_terminations.json`
+
+### Telegram Purchase Reader
+
+`TelegramExpenseSync` (started in `WebApplication._build_api`) runs a daemon thread with a Telethon *user* session that reads the NU notification chat every 60 s and only **queues** purchases. The JS `TelegramExpenseWatcher` (started by `AppController`) drains that queue through the same `classify_extracted_expense` / `register_extracted_expense` path as the statement-PDF import. The bot's own `sendMessage` posts are invisible to the Bot API, which is why a user session is required.
 
 ## Frontend (webui)
 

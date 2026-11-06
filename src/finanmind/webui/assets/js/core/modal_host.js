@@ -18,6 +18,10 @@ export class ModalHost {
     document.addEventListener("keydown", this._handleKey);
   }
 
+  isOpen() {
+    return this._activeNode !== null;
+  }
+
   close() {
     if (this._activeNode === null) return;
     this._root.innerHTML = "";

@@ -5,6 +5,7 @@ import { SidebarView } from "./sidebar_view.js";
 import { ToastHost } from "./toast_host.js";
 import { BudgetPanel } from "../budget/budget_panel.js";
 import { CardsPanel } from "../cards/cards_panel.js";
+import { TelegramExpenseWatcher } from "../cards/telegram_expense_watcher.js";
 import { DashboardPanel } from "../dashboard/dashboard_panel.js";
 import { DistributionPanel } from "../distribution/distribution_panel.js";
 import { InvestmentsPanel } from "../investments/investments_panel.js";
@@ -24,6 +25,7 @@ export class AppController {
     this._sidebar.mount({ onSelect: (key) => this._handleNav(key) });
     this._sidebar.setActive("dashboard");
     await this._router.setActive("dashboard");
+    new TelegramExpenseWatcher(this._api, this._modal, this._toast, () => this._router.refreshActive()).start();
   }
 
   _registerPanels() {

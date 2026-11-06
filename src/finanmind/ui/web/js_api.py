@@ -9,6 +9,7 @@ from finanmind.ui.web.bridges.dashboard_bridge import DashboardBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 from finanmind.ui.web.bridges.investment_bridge import InvestmentBridge
 from finanmind.ui.web.bridges.investment_review_bridge import InvestmentReviewBridge
+from finanmind.ui.web.bridges.telegram_bridge import TelegramBridge
 
 
 class JsApi:
@@ -23,6 +24,7 @@ class JsApi:
         investment_review_bridge: InvestmentReviewBridge,
         dashboard_bridge: DashboardBridge,
         budget_review_bridge: BudgetReviewBridge,
+        telegram_bridge: TelegramBridge,
     ) -> None:
         self._budget = budget_bridge
         self._distribution = distribution_bridge
@@ -31,6 +33,7 @@ class JsApi:
         self._review = investment_review_bridge
         self._dashboard = dashboard_bridge
         self._budget_review = budget_review_bridge
+        self._telegram = telegram_bridge
 
     def get_budget_state(self) -> dict:
         """Return the full Budget workspace snapshot for the UI to render."""
@@ -178,9 +181,9 @@ class JsApi:
         title: str,
         color: str = "",
         link_id: str = "",
-    ) -> None:
-        """Append a new expense category bound to a card."""
-        self._cards.add_category(card_id, title, color, link_id)
+    ) -> dict:
+        """Append a new expense category bound to a card and return its id."""
+        return self._cards.add_category(card_id, title, color, link_id)
 
     def update_card_category(
         self,
@@ -243,6 +246,74 @@ class JsApi:
         """Remove one payment from the card history."""
         self._cards.delete_payment(payment_id)
 
+    def get_card_automation_state(self, card_id: str) -> dict:
+        """Return whether Gmail processing automation is configured for a card."""
+        return self._cards.automation_state(card_id)
+
+    def save_card_automation(self, card_id: str, email: str, app_password: str) -> None:
+        """Validate the Gmail connection and link it to the card's processing automation."""
+        self._cards.save_automation(card_id, email, app_password)
+
+    def clear_card_automation(self, card_id: str) -> None:
+        """Unlink the Gmail account used to automate a card's processing."""
+        self._cards.clear_automation(card_id)
+
+    def scan_card_statement_emails(self, card_id: str) -> list[dict]:
+        """Look up NU statement-arrival emails in the Gmail account linked to a card."""
+        return self._cards.scan_statement_emails(card_id)
+
+    def extract_card_statement_expenses(
+        self,
+        card_id: str,
+        message_ids: list[str],
+        pdf_password: str = "",
+    ) -> dict:
+        """Download the selected statement PDFs and extract their expense rows into a CSV.
+
+        The PDF password is remembered per card once entered; pass an empty string to
+        try the remembered one, and only pass a new value after a password error.
+        """
+        return self._cards.extract_statement_expenses(card_id, message_ids, pdf_password)
+
+    def get_card_categories(self, card_id: str) -> list[dict]:
+        """Return the categories available on a card, for the auto-registration wizard."""
+        return self._cards.card_categories(card_id)
+
+    def classify_extracted_expense(self, card_id: str, row: dict) -> dict:
+        """Decide whether an extracted statement row is a known expense, a new one, or a payment."""
+        return self._cards.classify_extracted_expense(card_id, row)
+
+    def register_extracted_expense(
+        self,
+        card_id: str,
+        row: dict,
+        category_id: str = "",
+        remember: bool = False,
+        description_override: str = "",
+    ) -> dict:
+        """Register one classified statement row as a payment or a categorized expense."""
+        return self._cards.register_extracted_expense(card_id, row, category_id, remember, description_override)
+
+    def remove_card_duplicate_expenses(self, card_id: str) -> dict:
+        """Emergency cleanup: delete expenses sharing the same date and total amount."""
+        return self._cards.remove_duplicate_expenses(card_id)
+
+    def get_telegram_sync_status(self) -> dict:
+        """Return the Telegram reader state plus the purchases waiting to be registered."""
+        return self._telegram.status()
+
+    def assign_telegram_card_termination(self, last4: str, card_id: str) -> None:
+        """Remember which card the purchases ending in ``last4`` belong to."""
+        self._telegram.assign_termination(last4, card_id)
+
+    def resolve_telegram_purchase(self, purchase_id: str) -> None:
+        """Drop one Telegram purchase from the queue after registering or skipping it."""
+        self._telegram.resolve_purchase(purchase_id)
+
+    def sync_telegram_now(self) -> None:
+        """Ask the background Telegram reader to check the chat immediately."""
+        self._telegram.sync_now()
+
     def get_investments_state(self) -> dict:
         """Return the full Investments panel snapshot (summary, entries, charts)."""
         return self._investments.get_state()
@@ -293,6 +364,10 @@ class JsApi:
     def get_investment_review_setup(self) -> dict:
         """Return rules, exchange rate, AI status, and credentials readiness."""
         return self._review.get_setup()
+
+    def set_investment_review_engine(self, engine: str, model_id: str) -> dict:
+        """Persist the review engine (API key or Claude Code CLI) and return the setup."""
+        return self._review.set_engine(engine, model_id)
 
     def add_investment_review_rule(self, text: str) -> list[dict]:
         """Append a new personal rule and return the refreshed rules list."""

@@ -19,6 +19,7 @@ from finanmind.services.investment_review_rules_store import (
 )
 from finanmind.services.investment_service import InvestmentService
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
+from finanmind.services.telegram_expense_sync import TelegramExpenseSync
 from finanmind.ui.web.bridges.budget_bridge import BudgetBridge
 from finanmind.ui.web.bridges.budget_review_bridge import BudgetReviewBridge
 from finanmind.ui.web.bridges.cards_bridge import CardsBridge
@@ -26,6 +27,7 @@ from finanmind.ui.web.bridges.dashboard_bridge import DashboardBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 from finanmind.ui.web.bridges.investment_bridge import InvestmentBridge
 from finanmind.ui.web.bridges.investment_review_bridge import InvestmentReviewBridge
+from finanmind.ui.web.bridges.telegram_bridge import TelegramBridge
 from finanmind.ui.web.frontend_assets import FrontendAssetsLocator
 from finanmind.ui.web.js_api import JsApi
 from finanmind.ui.web.web_window_config import WebWindowConfig
@@ -50,6 +52,8 @@ class WebApplication:
         ledger = cls._make_distribution_service()
         investments = cls._make_investment_service()
         rules = cls._make_review_rules_store()
+        telegram_sync = TelegramExpenseSync()
+        telegram_sync.start()
         return JsApi(
             BudgetBridge(book, cards),
             DistributionBridge(book, ledger),
@@ -58,6 +62,7 @@ class WebApplication:
             InvestmentReviewBridge(investments, rules),
             DashboardBridge(book, ledger, cards, investments),
             BudgetReviewBridge(book),
+            TelegramBridge(cards, telegram_sync),
         )
 
     @classmethod

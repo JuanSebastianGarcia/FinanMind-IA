@@ -10,7 +10,11 @@ import { CategoryDialog } from "./dialogs/category_dialog.js";
 import { ConfirmDialog } from "../budget/dialogs/confirm_dialog.js";
 import { DomBuilder } from "../core/dom_builder.js";
 import { ExpenseDialog } from "./dialogs/expense_dialog.js";
+import { ExtractedExpensesDialog } from "./dialogs/extracted_expenses_dialog.js";
+import { ExpenseRegistrationWizard } from "./expense_registration_wizard.js";
 import { PaymentDialog } from "./dialogs/payment_dialog.js";
+import { PdfPasswordDialog } from "./dialogs/pdf_password_dialog.js";
+import { StatementScanDialog } from "./dialogs/statement_scan_dialog.js";
 
 export class CardDetailView {
   /** Orchestrates the single-card detail view: topbar, summary, filter, split layout. */
@@ -88,6 +92,8 @@ export class CardDetailView {
       onDelete: () => this._handleDeleteCard(),
       onNewPayment: () => this._handleNewPayment(),
       onNewExpense: () => this._handleNewExpense(),
+      onScanStatements: () => this._handleScanStatements(),
+      onRemoveDuplicates: () => this._handleRemoveDuplicates(),
     };
   }
 
@@ -218,6 +224,91 @@ export class CardDetailView {
       () => this._api.addCardPayment(this._context.cardId, payload.day, payload.amount, payload.notes),
       "Pago",
     );
+  }
+
+  async _handleRemoveDuplicates() {
+    const ok = await this._askConfirm(
+      "Borrar gastos duplicados",
+      "Se eliminarán los gastos y los pagos que compartan exactamente la misma fecha y el mismo valor, "
+        + "dejando solo el primero registrado de cada grupo. Esta acción no se puede deshacer. ¿Continuar?",
+    );
+    if (!ok) return;
+    try {
+      const result = await this._api.removeCardDuplicateExpenses(this._context.cardId);
+      this._toast.info(
+        `Se eliminaron ${result.removed} gasto(s) y ${result.removed_payments || 0} pago(s) duplicado(s).`,
+      );
+      await this._reRender();
+    } catch (err) {
+      this._toast.error(`Borrar duplicados: ${CardDetailView._humanError(err)}`);
+    }
+  }
+
+  async _handleScanStatements() {
+    this._toast.info("Búsqueda iniciada, buscando correos de extracto NU...");
+    this._modal.open(this._buildLoadingNode(
+      "Registrar gastos automático",
+      "Buscando correos de extracto NU en Gmail, esto puede tardar unos segundos...",
+    ));
+    let rows;
+    try {
+      rows = await this._api.scanCardStatementEmails(this._context.cardId);
+    } catch (err) {
+      this._modal.close();
+      this._toast.error(`Registro automático: ${CardDetailView._humanError(err)}`);
+      return;
+    }
+    const scanResult = await new StatementScanDialog(this._modal, rows).show();
+    if (!scanResult) return;
+    await this._handleExtractExpenses(scanResult.messageIds);
+  }
+
+  async _handleExtractExpenses(messageIds) {
+    const result = await this._extractWithPasswordRetry(messageIds);
+    if (!result) return;
+    const outcome = await new ExtractedExpensesDialog(this._modal, result.rows, result.csv_path).show();
+    if (!outcome || outcome.action !== "register") return;
+    await new ExpenseRegistrationWizard(this._modal, this._api, this._toast, this._context.cardId, result.rows).run();
+    await this._reRender();
+  }
+
+  async _extractWithPasswordRetry(messageIds) {
+    let password = "";
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      this._modal.open(this._buildLoadingNode(
+        "Registrar gastos automático",
+        "Descargando y leyendo los PDF seleccionados, esto puede tardar unos segundos...",
+      ));
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        return await this._api.extractCardStatementExpenses(this._context.cardId, messageIds, password);
+      } catch (err) {
+        this._modal.close();
+        const message = CardDetailView._humanError(err);
+        if (message === "PDF_PASSWORD_REQUIRED" || message === "PDF_PASSWORD_INVALID") {
+          if (message === "PDF_PASSWORD_INVALID") {
+            this._toast.error("La contraseña guardada ya no abre estos extractos. Ingresa la contraseña correcta.");
+          }
+          // eslint-disable-next-line no-await-in-loop
+          password = await new PdfPasswordDialog(this._modal).show();
+          if (!password) return null;
+          continue;
+        }
+        this._toast.error(`Registro automático: ${message}`);
+        return null;
+      }
+    }
+    this._toast.error("No se pudo validar la contraseña del PDF después de varios intentos.");
+    return null;
+  }
+
+  _buildLoadingNode(title, message) {
+    const modal = DomBuilder.el("div", "modal");
+    modal.appendChild(DomBuilder.el("div", "modal__title", title));
+    const body = DomBuilder.el("div", "modal__body");
+    body.appendChild(DomBuilder.el("div", "modal__hint", message));
+    modal.appendChild(body);
+    return modal;
   }
 
   async _handleDeletePayment(paymentId) {
