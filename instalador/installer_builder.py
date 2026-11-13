@@ -146,6 +146,10 @@ class InstallerBuilder:
         return [
             "--collect-all", "customtkinter",
             "--collect-all", "webview",
+            "--collect-submodules", "google.auth",
+            "--collect-submodules", "google.oauth2",
+            "--collect-submodules", "google_auth_oauthlib",
+            "--copy-metadata", "google-auth",
         ]
 
     def _data_separator(self) -> str:

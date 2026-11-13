@@ -9,6 +9,7 @@ import { TelegramExpenseWatcher } from "../cards/telegram_expense_watcher.js";
 import { DashboardPanel } from "../dashboard/dashboard_panel.js";
 import { DistributionPanel } from "../distribution/distribution_panel.js";
 import { InvestmentsPanel } from "../investments/investments_panel.js";
+import { PaymentsPanel } from "../payments/payments_panel.js";
 
 export class AppController {
   /** Top-level coordinator: builds collaborators, panels and routes navigation. */
@@ -34,6 +35,7 @@ export class AppController {
     this._registerPanel("distribution", DistributionPanel, "distribution-panel");
     this._registerPanel("cards", CardsPanel, "cards-panel");
     this._registerPanel("investments", InvestmentsPanel, "investments-panel");
+    this._registerPanel("payments", PaymentsPanel, "payments-panel");
   }
 
   _registerPanel(key, PanelClass, hostId) {

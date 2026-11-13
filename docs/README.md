@@ -11,6 +11,7 @@ _(vacío por ahora — agregar notas de decisiones estructurales aquí)_
 ## features/
 
 - [investment-review-claude-cli.md](features/investment-review-claude-cli.md): análisis IA de inversiones con API key o con Claude Code (CLI)
+- [payments-calendar.md](features/payments-calendar.md): calendario de pagos recurrentes (frecuencias, marca de pagado por mes, etiqueta del presupuesto, avisos)
 
 ## flows/
 

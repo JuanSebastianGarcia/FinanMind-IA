@@ -271,4 +271,52 @@ export class ApiClient {
   syncTelegramNow() {
     return this._api.sync_telegram_now();
   }
+
+  getPaymentsState(preferredMonth) {
+    return this._api.get_payments_state(preferredMonth || "");
+  }
+
+  getPaymentsLabelOptions() {
+    return this._api.get_payments_label_options();
+  }
+
+  addRecurringPayment(data) {
+    return this._api.add_recurring_payment(data);
+  }
+
+  updateRecurringPayment(paymentId, data) {
+    return this._api.update_recurring_payment(paymentId, data);
+  }
+
+  deleteRecurringPayment(paymentId) {
+    return this._api.delete_recurring_payment(paymentId);
+  }
+
+  setRecurringPaymentPaid(paymentId, month, paid) {
+    return this._api.set_recurring_payment_paid(paymentId, month, !!paid);
+  }
+
+  recordRecurringPaymentAmount(paymentId, month, amount, markPaid) {
+    return this._api.record_recurring_payment_amount(paymentId, month, amount, !!markPaid);
+  }
+
+  getGoogleCalendarStatus() {
+    return this._api.get_google_calendar_status();
+  }
+
+  saveGoogleCalendarClient(jsonText) {
+    return this._api.save_google_calendar_client(jsonText);
+  }
+
+  connectGoogleCalendar() {
+    return this._api.connect_google_calendar();
+  }
+
+  syncGoogleCalendar() {
+    return this._api.sync_google_calendar();
+  }
+
+  disconnectGoogleCalendar() {
+    return this._api.disconnect_google_calendar();
+  }
 }

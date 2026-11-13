@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from wsgiref.simple_server import WSGIServer
+
 import webview
 
 from finanmind.budget.book_service import BudgetBookService
@@ -13,12 +15,16 @@ from finanmind.repositories.investment_repository_factory import (
 from finanmind.repositories.monthly_distribution_repository_factory import (
     MonthlyDistributionRepositoryFactory,
 )
+from finanmind.repositories.recurring_payment_repository_factory import (
+    RecurringPaymentRepositoryFactory,
+)
 from finanmind.services.credit_card_service import CreditCardService
 from finanmind.services.investment_review_rules_store import (
     InvestmentReviewRulesStore,
 )
 from finanmind.services.investment_service import InvestmentService
 from finanmind.services.monthly_distribution_service import MonthlyDistributionService
+from finanmind.services.recurring_payment_service import RecurringPaymentService
 from finanmind.services.telegram_expense_sync import TelegramExpenseSync
 from finanmind.ui.web.bridges.budget_bridge import BudgetBridge
 from finanmind.ui.web.bridges.budget_review_bridge import BudgetReviewBridge
@@ -27,6 +33,7 @@ from finanmind.ui.web.bridges.dashboard_bridge import DashboardBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 from finanmind.ui.web.bridges.investment_bridge import InvestmentBridge
 from finanmind.ui.web.bridges.investment_review_bridge import InvestmentReviewBridge
+from finanmind.ui.web.bridges.payments_bridge import PaymentsBridge
 from finanmind.ui.web.bridges.telegram_bridge import TelegramBridge
 from finanmind.ui.web.frontend_assets import FrontendAssetsLocator
 from finanmind.ui.web.js_api import JsApi
@@ -39,11 +46,19 @@ class WebApplication:
     @classmethod
     def run(cls) -> None:
         """Start PyWebview blocking on the rendered window's lifecycle."""
+        cls._widen_http_backlog()
         api = cls._build_api()
         config = WebWindowConfig.default()
         index_path = FrontendAssetsLocator.find_index_path()
         cls._create_window(index_path, api, config)
         webview.start(http_server=True, debug=config.debug)
+
+    @classmethod
+    def _widen_http_backlog(cls) -> None:
+        # PyWebView's local server is a wsgiref ``WSGIServer`` whose listen backlog
+        # defaults to 5; WebView2 opens more parallel connections than that for the
+        # startup CSS/JS burst, and Windows refuses the overflow instead of queueing it.
+        WSGIServer.request_queue_size = 64
 
     @classmethod
     def _build_api(cls) -> JsApi:
@@ -52,6 +67,7 @@ class WebApplication:
         ledger = cls._make_distribution_service()
         investments = cls._make_investment_service()
         rules = cls._make_review_rules_store()
+        payments = cls._make_payments_service()
         telegram_sync = TelegramExpenseSync()
         telegram_sync.start()
         return JsApi(
@@ -63,6 +79,7 @@ class WebApplication:
             DashboardBridge(book, ledger, cards, investments),
             BudgetReviewBridge(book),
             TelegramBridge(cards, telegram_sync),
+            PaymentsBridge(book, payments),
         )
 
     @classmethod
@@ -86,6 +103,12 @@ class WebApplication:
     @classmethod
     def _make_investment_service(cls) -> InvestmentService:
         service = InvestmentService(InvestmentRepositoryFactory.from_app_config())
+        service.load()
+        return service
+
+    @classmethod
+    def _make_payments_service(cls) -> RecurringPaymentService:
+        service = RecurringPaymentService(RecurringPaymentRepositoryFactory.from_app_config())
         service.load()
         return service
 

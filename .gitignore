@@ -46,6 +46,10 @@ mistral_model.txt
 .env
 *.env
 
+# Google Calendar: OAuth client and authorized account token (DPAPI-encrypted)
+data/google_calendar_*.json
+client_secret*.json
+
 # Telegram purchase reader: encrypted session, reading checkpoint and queued purchases
 data/telegram_*.json
 *.session

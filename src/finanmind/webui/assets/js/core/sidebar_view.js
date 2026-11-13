@@ -31,6 +31,7 @@ export class SidebarView {
       { key: "distribution", label: "Distribución mensual" },
       { key: "cards", label: "Deudas" },
       { key: "investments", label: "Inversiones" },
+      { key: "payments", label: "Calendario de pagos" },
     ];
   }
 

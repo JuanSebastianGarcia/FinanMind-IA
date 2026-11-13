@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Finanmind** is a personal finance desktop application for Windows. It uses Python for backend logic and a PyWebView-hosted HTML/CSS/JS web UI as the main interface. Domain data is persisted as CSV files. The app supports AI-powered financial analysis via OpenAI or Mistral.
 
-Features: budget tracking, credit card management, investment portfolios, income distribution, financial dashboards, AI budget/investment reviews.
+Features: budget tracking, recurring payments calendar, credit card management, investment portfolios, income distribution, financial dashboards, AI budget/investment reviews.
 
 ## Running the App
 
@@ -70,7 +70,7 @@ CSV Files  (data/)
 
 ### Domain Bridges
 
-Eight bridge classes under `ui/web/bridges/` connect Python services to JavaScript:
+Nine bridge classes under `ui/web/bridges/` connect Python services to JavaScript:
 
 - `BudgetBridge` — salary, categories, labels
 - `CardsBridge` — credit card CRUD, transactions, payments
@@ -80,8 +80,9 @@ Eight bridge classes under `ui/web/bridges/` connect Python services to JavaScri
 - `BudgetReviewBridge` — AI budget analysis
 - `InvestmentReviewBridge` — AI investment analysis
 - `TelegramBridge` — NU purchases read from a Telegram chat (queue, card terminations)
+- `PaymentsBridge` — recurring payments calendar (bills, monthly paid mark, budget-label link, reminders mirrored to Google Calendar via OAuth desktop flow). See `docs/features/payments-calendar.md`
 
-Each bridge is split into many single-purpose companion files (not just one): `*_builder.py` (serialize domain models to dicts for JSON transfer), `*_resolver.py`, and `*_serializer.py`. `ui/web/bridges/` has ~47 files total for the 8 bridge classes — e.g. `cards_bridge.py` alone has 8+ companions (`cards_categories_builder.py`, `cards_chart_builder.py`, `cards_cycles_resolver.py`, `cards_expenses_builder.py`, etc).
+Each bridge is split into many single-purpose companion files (not just one): `*_builder.py` (serialize domain models to dicts for JSON transfer), `*_resolver.py`, and `*_serializer.py`. `ui/web/bridges/` has ~57 files total for the 9 bridge classes — e.g. `cards_bridge.py` alone has 8+ companions (`cards_categories_builder.py`, `cards_chart_builder.py`, `cards_cycles_resolver.py`, `cards_expenses_builder.py`, etc).
 
 ### Budget Module Extras
 
@@ -108,11 +109,12 @@ Factories require `AppConfig.USER_DATA_ROOT` to be set first. Repositories do at
 
 ### Data / Secrets (git-ignored, live in `data/`)
 
-- `budget.csv`, `credit_cards.csv`, `investments.csv`, `monthly_distribution.csv`
+- `budget.csv`, `credit_cards.csv`, `investments.csv`, `monthly_distribution.csv`, `recurring_payments.csv`
 - `openai_api_key.txt`, `mistral_api_key.txt`
 - `budget_ai_provider.txt`, `mistral_model.txt`
 - `investment_ai_engine.txt` (`api` | `claude_cli`), `claude_cli_model.txt`
 - `usd_cop_rate.txt`
+- `google_calendar_client.json` (OAuth desktop client), `google_calendar_account.json` (token + pending deletions) — both DPAPI-encrypted
 - `telegram_automation.json` (DPAPI-encrypted Telegram session), `telegram_sync_state.json` (read checkpoint + queued purchases), `telegram_card_terminations.json`
 
 ### Telegram Purchase Reader
@@ -125,7 +127,7 @@ Factories require `AppConfig.USER_DATA_ROOT` to be set first. Repositories do at
 - All JS is vanilla ES modules under `webui/assets/js/`
 - `app.js` is the JS entry point
 - JS calls Python via `window.pywebview.api.<bridge_method>()`
-- Subfolders mirror domain: `budget/`, `cards/`, `investments/`, `distribution/`, `dashboard/`, `core/`, `format/`
+- Subfolders mirror domain: `budget/`, `cards/`, `investments/`, `distribution/`, `dashboard/`, `payments/`, `core/`, `format/`
 
 ## No Tests
 

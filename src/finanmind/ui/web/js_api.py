@@ -9,6 +9,7 @@ from finanmind.ui.web.bridges.dashboard_bridge import DashboardBridge
 from finanmind.ui.web.bridges.distribution_bridge import DistributionBridge
 from finanmind.ui.web.bridges.investment_bridge import InvestmentBridge
 from finanmind.ui.web.bridges.investment_review_bridge import InvestmentReviewBridge
+from finanmind.ui.web.bridges.payments_bridge import PaymentsBridge
 from finanmind.ui.web.bridges.telegram_bridge import TelegramBridge
 
 
@@ -25,6 +26,7 @@ class JsApi:
         dashboard_bridge: DashboardBridge,
         budget_review_bridge: BudgetReviewBridge,
         telegram_bridge: TelegramBridge,
+        payments_bridge: PaymentsBridge,
     ) -> None:
         self._budget = budget_bridge
         self._distribution = distribution_bridge
@@ -34,6 +36,7 @@ class JsApi:
         self._dashboard = dashboard_bridge
         self._budget_review = budget_review_bridge
         self._telegram = telegram_bridge
+        self._payments = payments_bridge
 
     def get_budget_state(self) -> dict:
         """Return the full Budget workspace snapshot for the UI to render."""
@@ -418,3 +421,57 @@ class JsApi:
     ) -> dict:
         """Persist provider + credentials and return the refreshed review setup."""
         return self._budget_review.save_llm_settings(provider, api_key, model_id)
+
+    def get_payments_state(self, preferred_month: str = "") -> dict:
+        """Return the Calendario de pagos snapshot for ``yyyy-mm``."""
+        return self._payments.get_state(preferred_month)
+
+    def get_payments_label_options(self) -> list[dict]:
+        """Return ``Category · Label`` options for the payment dialog."""
+        return self._payments.label_options()
+
+    def add_recurring_payment(self, data: dict) -> dict:
+        """Create a recurring bill and return its id."""
+        return self._payments.add_payment(data)
+
+    def update_recurring_payment(self, payment_id: str, data: dict) -> dict:
+        """Edit a recurring bill definition; returns ``{calendar_warning}``."""
+        return self._payments.update_payment(payment_id, data)
+
+    def delete_recurring_payment(self, payment_id: str) -> dict:
+        """Remove a recurring bill and its monthly history; returns ``{calendar_warning}``."""
+        return self._payments.delete_payment(payment_id)
+
+    def set_recurring_payment_paid(self, payment_id: str, month: str, paid: bool) -> None:
+        """Mark or unmark one bill as paid for ``yyyy-mm``."""
+        self._payments.set_paid(payment_id, month, paid)
+
+    def record_recurring_payment_amount(
+        self,
+        payment_id: str,
+        month: str,
+        amount=None,
+        mark_paid: bool = False,
+    ) -> None:
+        """Register the real value of a bill for ``yyyy-mm``."""
+        self._payments.record_amount(payment_id, month, amount, mark_paid)
+
+    def get_google_calendar_status(self) -> dict:
+        """Return whether the OAuth client is loaded and Google Calendar is connected."""
+        return self._payments.google_status()
+
+    def save_google_calendar_client(self, json_text: str) -> dict:
+        """Store the Google Cloud OAuth desktop client JSON chosen by the user."""
+        return self._payments.save_google_client(json_text)
+
+    def connect_google_calendar(self) -> dict:
+        """Open the browser consent, store the token and sync every bill."""
+        return self._payments.connect_google()
+
+    def sync_google_calendar(self) -> dict:
+        """Push every bill to Google Calendar and flush queued deletions."""
+        return self._payments.sync_google()
+
+    def disconnect_google_calendar(self) -> dict:
+        """Revoke Google access; already created events stay in the calendar."""
+        return self._payments.disconnect_google()
