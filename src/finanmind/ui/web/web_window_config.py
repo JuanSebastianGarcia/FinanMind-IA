@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from finanmind.storage.runtime_environment import RuntimeEnvironment
+
 
 @dataclass(frozen=True)
 class WebWindowConfig:
@@ -19,5 +21,7 @@ class WebWindowConfig:
 
     @classmethod
     def default(cls) -> "WebWindowConfig":
-        """Return the standard production window configuration."""
-        return cls()
+        """Return the standard configuration; the title flags development runs."""
+        if RuntimeEnvironment.is_production():
+            return cls()
+        return cls(title=f"{cls.title} (desarrollo)")

@@ -32,15 +32,16 @@ class TelegramExpenseSync:
 
     POLL_SECONDS = 60
 
-    def __init__(self) -> None:
+    def __init__(self, enabled: bool = True) -> None:
         self._thread: threading.Thread | None = None
         self._wake = threading.Event()
-        self._state = "not_configured"
+        self._enabled = enabled
+        self._state = "not_configured" if enabled else "disabled"
         self._error = ""
 
     def start(self) -> None:
-        """Start reading in the background; no-op when Telegram is not set up."""
-        if self._thread is not None:
+        """Start reading in the background; no-op when disabled or Telegram is not set up."""
+        if self._thread is not None or not self._enabled:
             return
         try:
             credentials = TelegramSessionStore.load()
@@ -62,7 +63,12 @@ class TelegramExpenseSync:
         self._wake.set()
 
     def status(self) -> dict:
-        """Snapshot for the UI: reader state, last read time and queued purchases."""
+        """Snapshot for the UI: reader state, last read time and queued purchases.
+
+        When disabled the shared queue is hidden, so the UI never drains it.
+        """
+        if not self._enabled:
+            return {"state": "disabled", "error": "", "last_read_at": "", "pending": []}
         _last_id, last_read_at = TelegramSyncStateStore.checkpoint()
         return {
             "state": self._state,

@@ -523,6 +523,16 @@
   background: var(--green);
 }
 
+.pay-gcal--off {
+  background: var(--bg-hover);
+  color: var(--txt-sec);
+  cursor: default;
+}
+
+.pay-gcal--off .pay-gcal__dot {
+  background: var(--txt-ter);
+}
+
 .pay-gsync {
   font-size: 10px;
   margin-top: 2px;

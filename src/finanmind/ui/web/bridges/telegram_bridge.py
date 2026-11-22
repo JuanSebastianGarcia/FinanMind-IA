@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from finanmind.services.credit_card_service import CreditCardService
+from finanmind.services.external_sync_policy import ExternalSyncPolicy
 from finanmind.services.telegram_card_termination_store import TelegramCardTerminationStore
 from finanmind.services.telegram_expense_sync import TelegramExpenseSync
 from finanmind.services.telegram_sync_state_store import TelegramSyncStateStore
@@ -22,6 +23,7 @@ class TelegramBridge:
         return {
             "state": snapshot["state"],
             "error": snapshot["error"],
+            "notice": ExternalSyncPolicy.DISABLED_DETAIL if snapshot["state"] == "disabled" else "",
             "last_read_at": snapshot["last_read_at"],
             "purchases": TelegramPendingRowsBuilder.build_many(self._cards, snapshot["pending"]),
             "cards": [{"card_id": card.card_id, "name": card.name} for card in self._cards.cards_snapshot()],

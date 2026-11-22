@@ -34,7 +34,9 @@ class InstallerBuilder:
         self._clean_previous_artifacts()
         self._run_pyinstaller()
         self._ensure_no_missing_app_imports()
-        return self._publish_build()
+        exe_path = self._publish_build()
+        self._install_d1_credentials()
+        return exe_path
 
     def _maybe_reexec_with_compatible_python(self) -> None:
         if PythonInterpreterPicker.is_current_compatible():
@@ -93,6 +95,32 @@ class InstallerBuilder:
             f"  Add the packages to requirements.txt and build again."
         )
 
+    def _install_d1_credentials(self) -> None:
+        """Write the production D1 credentials for this Windows user (never into the bundle).
+
+        The .exe reads ``%LOCALAPPDATA%/Finanmind/cloudflare_d1.json`` (token DPAPI-encrypted),
+        so the zip can be shared without leaking the token.
+        """
+        if str(self._src_dir) not in sys.path:
+            sys.path.insert(0, str(self._src_dir))
+        from finanmind.storage.d1_credentials import D1CredentialsStore
+
+        env_file = self._project_root / D1CredentialsStore.ENV_FILENAME
+        creds = D1CredentialsStore.read_env_file(env_file)
+        if creds is None or not creds.is_complete():
+            keys = ", ".join(D1CredentialsStore.ENV_KEYS)
+            print("", flush=True)
+            print(f"[installer] WARNING: {env_file} is missing or incomplete ({keys}).", flush=True)
+            print(
+                "[installer] WARNING: the .exe will NOT be able to load data from Cloudflare D1 "
+                f"until {D1CredentialsStore.path()} exists. Fill cloudflare.env and build again.",
+                flush=True,
+            )
+            return
+        target = D1CredentialsStore.save(creds)
+        print(f"[installer] D1 credentials written for this Windows user: {target}", flush=True)
+        print("[installer]   (token DPAPI-encrypted; not included in the .exe or the zip)", flush=True)
+
     def _ensure_webui_present(self) -> None:
         index_html = self._webui_dir / "index.html"
         if not index_html.is_file():
@@ -146,6 +174,8 @@ class InstallerBuilder:
         return [
             "--collect-all", "customtkinter",
             "--collect-all", "webview",
+            # Production storage backend; imported by the repository factories.
+            "--collect-submodules", "finanmind.storage",
             "--collect-submodules", "google.auth",
             "--collect-submodules", "google.oauth2",
             "--collect-submodules", "google_auth_oauthlib",

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from finanmind.models.recurring_payment import RecurringPayment
+from finanmind.services.external_sync_policy import ExternalSyncPolicy
 from finanmind.services.google_calendar_auth import GoogleCalendarAuth, GoogleCalendarAuthError
 from finanmind.services.google_calendar_client import GoogleCalendarApiError, GoogleCalendarClient
 from finanmind.services.google_calendar_event_builder import GoogleCalendarEventBuilder
@@ -31,20 +32,38 @@ class PaymentCalendarSync:
 
     _ERRORS = (GoogleCalendarAuthError, GoogleCalendarApiError)
 
-    def __init__(self, service: RecurringPaymentService) -> None:
+    def __init__(self, service: RecurringPaymentService, enabled: bool = True) -> None:
+        """``enabled=False`` (development) never calls Google nor touches the shared account file."""
         self._service = service
+        self._enabled = enabled
 
     def status(self) -> dict:
+        if not self._enabled:
+            return {
+                "has_client": False,
+                "connected": False,
+                "email": "",
+                "pending_deletes": 0,
+                "disabled": True,
+                "disabled_label": ExternalSyncPolicy.DISABLED_LABEL,
+                "disabled_detail": ExternalSyncPolicy.DISABLED_DETAIL,
+            }
         account = GoogleCalendarStore.load_account()
         return {
             "has_client": GoogleCalendarAuth.has_client(),
             "connected": account["token"] != "",
             "email": account["email"],
             "pending_deletes": len(account["pending_deletes"]),
+            "disabled": False,
         }
 
+    def ensure_enabled(self) -> None:
+        """Raise the user-facing reason when the mirror is disabled in this environment."""
+        if not self._enabled:
+            raise GoogleCalendarAuthError(f"Google Calendar: {ExternalSyncPolicy.DISABLED_DETAIL}")
+
     def is_connected(self) -> bool:
-        return GoogleCalendarAuth.is_connected()
+        return self._enabled and GoogleCalendarAuth.is_connected()
 
     def push(self, payment: RecurringPayment, label_caption: str) -> str | None:
         """Create/update (or remove, if reminders are off) the bill's event."""
@@ -60,7 +79,7 @@ class PaymentCalendarSync:
     def remove(self, payment: RecurringPayment) -> str | None:
         """Delete the event of a bill that is being deleted."""
         event_id = payment.google_event_id
-        if not event_id:
+        if not event_id or not self._enabled:
             return None
         if not self.is_connected():
             self._queue_delete(event_id)
@@ -75,6 +94,7 @@ class PaymentCalendarSync:
 
     def sync_all(self, labels: dict[str, str]) -> CalendarSyncReport:
         """Flush queued deletions and push every bill. ``labels`` maps label_id → caption."""
+        self.ensure_enabled()
         report = CalendarSyncReport(errors=[])
         client, tz = self._client()
         account = GoogleCalendarStore.load_account()
@@ -99,6 +119,7 @@ class PaymentCalendarSync:
 
     def forget_event_ids(self) -> None:
         """After disconnecting, events stay in the old account: stop tracking them."""
+        self.ensure_enabled()
         for pay in self._service.payments():
             if pay.google_event_id:
                 self._service.set_google_event_id(pay.payment_id, "")

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from finanmind.budget.book_service import BudgetBookService
+from finanmind.services.external_sync_policy import ExternalSyncPolicy
 from finanmind.services.google_calendar_auth import GoogleCalendarAuth, GoogleCalendarAuthError
 from finanmind.services.google_calendar_client import GoogleCalendarApiError
 from finanmind.services.payment_calendar_sync import PaymentCalendarSync
@@ -20,7 +21,7 @@ class PaymentsBridge:
     def __init__(self, book: BudgetBookService, service: RecurringPaymentService) -> None:
         self._book = book
         self._service = service
-        self._calendar = PaymentCalendarSync(service)
+        self._calendar = PaymentCalendarSync(service, enabled=ExternalSyncPolicy.is_enabled())
 
     def get_state(self, preferred_month: str) -> dict:
         """Snapshot for ``yyyy-mm`` (defaults to the current month)."""
@@ -64,11 +65,13 @@ class PaymentsBridge:
 
     def save_google_client(self, json_text: str) -> dict:
         """Store the OAuth desktop client file chosen in the dialog."""
+        self._guard(self._calendar.ensure_enabled)
         self._guard(lambda: GoogleCalendarAuth.save_client_from_text(json_text))
         return self._calendar.status()
 
     def connect_google(self) -> dict:
         """Run the browser consent, then push every bill to the calendar."""
+        self._guard(self._calendar.ensure_enabled)
         self._guard(GoogleCalendarAuth.connect)
         result = self.sync_google()
         result["status"] = self._calendar.status()
@@ -76,11 +79,13 @@ class PaymentsBridge:
 
     def sync_google(self) -> dict:
         """Push every bill and flush queued deletions."""
+        self._guard(self._calendar.ensure_enabled)
         report = self._guard(lambda: self._calendar.sync_all(self._captions()))
         return {"synced": report.synced, "removed": report.removed, "errors": report.errors or []}
 
     def disconnect_google(self) -> dict:
         """Revoke access; events already created stay in the calendar."""
+        self._guard(self._calendar.ensure_enabled)
         GoogleCalendarAuth.disconnect()
         self._calendar.forget_event_ids()
         return self._calendar.status()

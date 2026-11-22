@@ -6,12 +6,18 @@ import csv
 from pathlib import Path
 
 from finanmind.config import AppConfig
+from finanmind.storage.d1_client import D1ClientProvider
+from finanmind.storage.runtime_environment import RuntimeEnvironment
 
 _FIELDNAMES = ["card_id", "description_key", "category_id"]
 
 
 class KnownExpenseCategoryStore:
-    """CSV-backed ``(card_id, description) -> category_id`` lookup for NU auto-registration."""
+    """``(card_id, description) -> category_id`` lookup for NU auto-registration.
+
+    Backed by a workspace CSV in development and by the D1 table
+    ``known_expense_categories`` in production.
+    """
 
     FILENAME = "known_expense_categories.csv"
 
@@ -19,6 +25,8 @@ class KnownExpenseCategoryStore:
     def lookup(cls, card_id: str, description: str) -> str | None:
         """Return the remembered category id for this description on this card, if any."""
         key = cls._normalize(description)
+        if RuntimeEnvironment.uses_cloud_storage():
+            return _D1KnownExpenseCategories.lookup(card_id, key)
         for row in cls._read_all():
             if row["card_id"] == card_id and row["description_key"] == key:
                 return row["category_id"]
@@ -28,6 +36,9 @@ class KnownExpenseCategoryStore:
     def remember(cls, card_id: str, description: str, category_id: str) -> None:
         """Store (or update) the category this description should map to on this card."""
         key = cls._normalize(description)
+        if RuntimeEnvironment.uses_cloud_storage():
+            _D1KnownExpenseCategories.remember(card_id, key, category_id)
+            return
         rows = [
             row for row in cls._read_all()
             if not (row["card_id"] == card_id and row["description_key"] == key)
@@ -65,3 +76,32 @@ class KnownExpenseCategoryStore:
         if root is None:
             raise RuntimeError("Workspace folder not configured yet.")
         return Path(root) / cls.FILENAME
+
+
+class _D1KnownExpenseCategories:
+    """Production backend; rows cascade away when their card or category is deleted."""
+
+    @staticmethod
+    def lookup(card_id: str, key: str) -> str | None:
+        rows = D1ClientProvider.shared().query(
+            "SELECT category_id FROM known_expense_categories WHERE card_id = ? AND description_key = ?",
+            card_id,
+            key,
+        )
+        return rows[0]["category_id"] if rows else None
+
+    @staticmethod
+    def remember(card_id: str, key: str, category_id: str) -> None:
+        # Only a hint for future imports: if the card or category is gone, skip it
+        # silently instead of failing a registration that already succeeded.
+        D1ClientProvider.shared().query(
+            "INSERT INTO known_expense_categories (card_id, description_key, category_id) "
+            "SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM credit_cards WHERE card_id = ?) "
+            "AND EXISTS (SELECT 1 FROM credit_card_categories WHERE category_id = ?) "
+            "ON CONFLICT (card_id, description_key) DO UPDATE SET category_id = excluded.category_id",
+            card_id,
+            key,
+            category_id,
+            card_id,
+            category_id,
+        )

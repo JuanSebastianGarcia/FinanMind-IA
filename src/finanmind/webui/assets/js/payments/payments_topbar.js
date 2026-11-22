@@ -22,6 +22,14 @@ export class PaymentsTopbar {
   update(state) {
     const google = state.google || {};
     this._googleEl.innerHTML = "";
+    if (google.disabled) {
+      const off = DomBuilder.el("span", "pay-gcal pay-gcal--off");
+      off.appendChild(DomBuilder.el("span", "pay-gcal__dot"));
+      off.appendChild(DomBuilder.el("span", "", `Google Calendar · ${google.disabled_label || "Desactivado en desarrollo"}`));
+      off.title = google.disabled_detail || "";
+      this._googleEl.appendChild(off);
+      return;
+    }
     if (!google.connected) {
       this._googleEl.appendChild(
         DomBuilder.button("btn btn--info", "Conectar Google Calendar", () => this._handlers.onGoogle()),

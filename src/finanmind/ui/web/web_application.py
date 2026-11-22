@@ -19,6 +19,7 @@ from finanmind.repositories.recurring_payment_repository_factory import (
     RecurringPaymentRepositoryFactory,
 )
 from finanmind.services.credit_card_service import CreditCardService
+from finanmind.services.external_sync_policy import ExternalSyncPolicy
 from finanmind.services.investment_review_rules_store import (
     InvestmentReviewRulesStore,
 )
@@ -37,6 +38,7 @@ from finanmind.ui.web.bridges.payments_bridge import PaymentsBridge
 from finanmind.ui.web.bridges.telegram_bridge import TelegramBridge
 from finanmind.ui.web.frontend_assets import FrontendAssetsLocator
 from finanmind.ui.web.js_api import JsApi
+from finanmind.ui.web.startup_error_dialog import StartupErrorDialog
 from finanmind.ui.web.web_window_config import WebWindowConfig
 
 
@@ -47,7 +49,9 @@ class WebApplication:
     def run(cls) -> None:
         """Start PyWebview blocking on the rendered window's lifecycle."""
         cls._widen_http_backlog()
-        api = cls._build_api()
+        api = cls._build_api_or_report()
+        if api is None:
+            return
         config = WebWindowConfig.default()
         index_path = FrontendAssetsLocator.find_index_path()
         cls._create_window(index_path, api, config)
@@ -61,6 +65,20 @@ class WebApplication:
         WSGIServer.request_queue_size = 64
 
     @classmethod
+    def _build_api_or_report(cls) -> JsApi | None:
+        """Load every service; on failure explain it and offer a retry instead of crashing.
+
+        Returns None when the user gives up: the window is not opened, so empty
+        or partial data can never be saved over the real data.
+        """
+        while True:
+            try:
+                return cls._build_api()
+            except Exception as err:  # D1Error offline/credentials, corrupt CSV, ...
+                if not StartupErrorDialog.ask_retry(err):
+                    return None
+
+    @classmethod
     def _build_api(cls) -> JsApi:
         book = cls._make_book_service()
         cards = cls._make_cards_service()
@@ -68,7 +86,7 @@ class WebApplication:
         investments = cls._make_investment_service()
         rules = cls._make_review_rules_store()
         payments = cls._make_payments_service()
-        telegram_sync = TelegramExpenseSync()
+        telegram_sync = TelegramExpenseSync(enabled=ExternalSyncPolicy.is_enabled())
         telegram_sync.start()
         return JsApi(
             BudgetBridge(book, cards),

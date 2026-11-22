@@ -19,11 +19,18 @@ export class TelegramExpenseWatcher {
     this._dismissed = new Set();
     this._lastError = "";
     this._palette = null;
+    this._timer = null;
   }
 
   start() {
     this._tick();
-    window.setInterval(() => this._tick(), POLL_MS);
+    this._timer = window.setInterval(() => this._tick(), POLL_MS);
+  }
+
+  _stop(notice) {
+    // Reader disabled for this session (development): stop polling, nothing to drain.
+    window.clearInterval(this._timer);
+    console.info(`Telegram: ${notice || "lector desactivado"}`);
   }
 
   async _tick() {
@@ -40,6 +47,10 @@ export class TelegramExpenseWatcher {
 
   async _process() {
     const status = await this._api.getTelegramSyncStatus();
+    if (status.state === "disabled") {
+      this._stop(status.notice);
+      return;
+    }
     this._reportError(status.error || "");
     const purchases = status.purchases || [];
     if (purchases.length === 0) return;

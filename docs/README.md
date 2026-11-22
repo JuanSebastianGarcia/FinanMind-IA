@@ -6,7 +6,8 @@ Esta carpeta se mantiene con la skill `document-project`: cada vez que se agrega
 
 ## architecture/
 
-_(vacío por ahora — agregar notas de decisiones estructurales aquí)_
+- [storage-environments.md](architecture/storage-environments.md): CSV en desarrollo y Cloudflare D1 en producción (selección de backend, capa D1, credenciales, importador, efectos externos apagados en desarrollo)
+- [data-model.md](architecture/data-model.md): modelo de datos persistido (CSV/JSON en la carpeta de trabajo) con diagrama entidad-relación. Su réplica como esquema en Cloudflare D1 está en [infra/cloudflare-d1/](../infra/cloudflare-d1/README.md)
 
 ## features/
 

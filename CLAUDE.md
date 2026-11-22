@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Finanmind** is a personal finance desktop application for Windows. It uses Python for backend logic and a PyWebView-hosted HTML/CSS/JS web UI as the main interface. Domain data is persisted as CSV files. The app supports AI-powered financial analysis via OpenAI or Mistral.
+**Finanmind** is a personal finance desktop application for Windows. It uses Python for backend logic and a PyWebView-hosted HTML/CSS/JS web UI as the main interface. Domain data is persisted as CSV files in development (running from source) and in Cloudflare D1 in production (the built .exe). The app supports AI-powered financial analysis via OpenAI or Mistral.
 
 Features: budget tracking, recurring payments calendar, credit card management, investment portfolios, income distribution, financial dashboards, AI budget/investment reviews.
 
@@ -30,7 +30,7 @@ python instalador/installer_builder.py
 # Output: instalador/Finanmind/Finanmind.exe + instalador/Finanmind.zip
 ```
 
-The builder auto-detects a compatible Python version (3.11–3.13) and re-execs if needed, then `pip install`s `requirements.txt` into that interpreter. After PyInstaller runs, it fails the build if `build/Finanmind/warn-Finanmind.txt` lists a non-optional `finanmind.*` import as missing (that .exe would crash on startup).
+The builder auto-detects a compatible Python version (3.11–3.13) and re-execs if needed, then `pip install`s `requirements.txt` into that interpreter. After PyInstaller runs, it fails the build if `build/Finanmind/warn-Finanmind.txt` lists a non-optional `finanmind.*` import as missing (that .exe would crash on startup). Finally it writes the production D1 credentials from the repo's git-ignored `cloudflare.env` to `%LOCALAPPDATA%\Finanmind\cloudflare_d1.json` (token DPAPI-encrypted, never bundled).
 
 ## Architecture
 
@@ -47,7 +47,7 @@ Repositories Layer  (repositories/ + budget/repository.py)
      ↓
 Models Layer  (models/)  — pure dataclasses, no deps
      ↓
-CSV Files  (data/)
+CSV Files  (data/)  — development   |   Cloudflare D1 (storage/)  — production
 ```
 
 ### Application Bootstrap
@@ -96,7 +96,20 @@ All CSV access goes through typed repository classes constructed by factories:
 repo = CreditCardRepositoryFactory.from_app_config()
 ```
 
-Factories require `AppConfig.USER_DATA_ROOT` to be set first. Repositories do atomic writes (write to tmp, then rename).
+Factories require `AppConfig.USER_DATA_ROOT` to be set first. CSV repositories do atomic writes (write to tmp, then rename).
+
+### Storage Environments (CSV vs Cloudflare D1)
+
+`RuntimeEnvironment` (`storage/runtime_environment.py`) picks the backend: development (from source) → CSV, production (`sys.frozen`) → D1; `FINANMIND_ENV=production|development` overrides. Every factory returns a `*D1Repository` (same `load_all`/`save_all` contract) in production and the CSV repository otherwise; `factory.csv_repository()` always returns the CSV one. `KnownExpenseCategoryStore` and `TelegramCardTerminationStore` also have a D1 branch. All other workspace files (API keys, Telegram state, Google tokens, passwords) stay local in both environments.
+
+- `storage/d1_client.py`: stdlib REST client; each call is one atomic D1 batch; errors are `D1Error` (Spanish message).
+- `storage/d1_table_sync.py`: snapshot diff → `ON CONFLICT DO UPDATE` upserts + deletes; `soft_refs` (cross-repository refs stored NULL when the target is gone) and `required_refs`. Empty references are NULL in D1 and `""` in models.
+- `storage/d1_credentials.py`: production reads `%LOCALAPPDATA%\Finanmind\cloudflare_d1.json`; from source it also accepts `CLOUDFLARE_*` env vars or `cloudflare.env`.
+- Schema scripts: `infra/cloudflare-d1/` (applied in order). CSV → D1 import: `cd src && py -3.12 -m finanmind.tools.d1_import --workspace <folder> [--yes] [--replace]`.
+- In development the Telegram reader and Google Calendar mirroring are off (`ExternalSyncPolicy`; `FINANMIND_DEV_EXTERNAL_SYNC=1` re-enables) because both environments share the workspace queue and calendar.
+- Production startup loads all services before opening the window; on failure a native dialog offers retry (`ui/web/startup_error_dialog.py`).
+
+See `docs/architecture/storage-environments.md`.
 
 ### LLM / AI Integration
 
