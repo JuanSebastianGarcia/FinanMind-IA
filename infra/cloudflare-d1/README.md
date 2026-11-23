@@ -8,6 +8,7 @@ Todos ya están aplicados en la base, en este orden:
 
 - `001_schema.sql`: esquema inicial (17 tablas, claves foráneas e índices).
 - `002_nullable_references.sql`: `credit_card_expenses.category_id` e `income_distribution_lines.label_id` pasan a aceptar NULL con `ON DELETE SET NULL`. Así coinciden con la app, que deja vacía la categoría de un gasto al borrar la categoría y no limpia las asignaciones al borrar una etiqueta.
+- `003_notification_reader.sql`: tablas de la lectura de notificaciones del celular (`notification_apps`, `notification_structures`, `notification_inbox`). Solo las usa la API de Finanmind Mobile; no cambia tablas existentes. Los gastos que registra van a `credit_card_expenses` sin categoría y con notas `Desde notificación`.
 
 ## Credenciales
 
